@@ -66,18 +66,26 @@
 <body class="bg-gray-100 text-gray-900 dark:bg-darkbg dark:text-gray-100 h-screen flex flex-col transition-colors duration-300 overflow-hidden">
 
     <!-- Navbar -->
-    <header class="bg-white dark:bg-darkcard shadow-md p-3 md:p-4 flex justify-between items-center z-20 gap-2">
-        <div onclick="recenterMap()" class="flex items-center gap-2 shrink-0 cursor-pointer hover:opacity-80 transition" title="Voltar para minha localização">
+    <header class="bg-white dark:bg-darkcard shadow-md p-3 md:p-4 flex justify-between items-center z-20 gap-2 min-h-[64px]">
+        <div id="nav-logo" onclick="recenterMap()" class="flex items-center gap-2 shrink-0 cursor-pointer hover:opacity-80 transition" title="Voltar para minha localização">
             <i data-lucide="dumbbell" class="text-indigo-600 dark:text-indigo-400"></i>
             <h1 class="text-xl font-bold tracking-tight hidden md:block">Calisthenics Map</h1>
         </div>
         
-        <div class="flex-1 max-w-md relative">
-            <input type="text" oninput="handleSearch(event)" placeholder="Pesquisar locais, equipamentos..." class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 dark:text-gray-200 transition shadow-inner">
+        <!-- Barra de pesquisa expansível -->
+        <div id="nav-search-container" class="hidden flex-1 max-w-full relative animate-fade-in">
+            <input type="text" id="main-search-input" oninput="handleSearch(event)" placeholder="Pesquisar locais, equipamentos..." class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full pl-10 pr-10 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 dark:text-gray-200 transition shadow-inner">
             <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+            <button onclick="closeSearchBar()" class="absolute right-3 top-2.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition" title="Cancelar pesquisa">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
         </div>
 
-        <div class="flex items-center gap-1 md:gap-3 shrink-0">
+        <!-- Botões de ação principais -->
+        <div id="nav-actions" class="flex items-center gap-1 md:gap-3 shrink-0">
+            <button onclick="openSearchBar()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Pesquisar">
+                <i data-lucide="search"></i>
+            </button>
             <button onclick="toggleViewMode()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Alternar Visualização">
                 <i data-lucide="layout-grid" id="view-icon-grid"></i>
                 <i data-lucide="list" id="view-icon-list" class="hidden"></i>
@@ -371,7 +379,8 @@
                 <button onclick="closeModal('aboutModal')" class="text-gray-500 hover:text-gray-800 dark:hover:text-white"><i data-lucide="x"></i></button>
             </div>
             <div class="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-4 text-sm text-gray-700 dark:text-gray-300">
-                <img src="https://images.unsplash.com/photo-1599058917200-318a44c4244a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Treino de Calistenia" class="w-full h-32 object-cover rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                
+                <img src="https://pbs.twimg.com/media/HCkCDanawAMpVv_.png" alt="Treino de Calistenia" class="w-full h-64 object-cover object-top rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 
                 <p>Este aplicativo foi criado para facilitar a vida de quem treina, permitindo salvar, gerenciar e compartilhar seus locais favoritos de prática de exercícios físicos ao ar livre.</p>
                 
@@ -972,7 +981,7 @@
             if(favCb) favCb.checked = false;
             
             searchTerm = '';
-            const searchInput = document.querySelector('input[placeholder="Pesquisar locais, equipamentos..."]');
+            const searchInput = document.getElementById('main-search-input');
             if(searchInput) searchInput.value = '';
 
             renderCatalog();
@@ -986,6 +995,31 @@
 
         function handleSearch(e) {
             searchTerm = e.target.value.toLowerCase();
+            renderCatalog();
+        }
+
+        function openSearchBar() {
+            document.getElementById('nav-actions').classList.add('hidden');
+            document.getElementById('nav-logo').classList.add('hidden', 'md:flex'); // Oculta logo no mobile para dar espaço
+            
+            const searchContainer = document.getElementById('nav-search-container');
+            searchContainer.classList.remove('hidden');
+            searchContainer.classList.add('flex');
+            
+            setTimeout(() => { document.getElementById('main-search-input').focus(); }, 50);
+        }
+
+        function closeSearchBar() {
+            const searchContainer = document.getElementById('nav-search-container');
+            searchContainer.classList.add('hidden');
+            searchContainer.classList.remove('flex');
+            
+            document.getElementById('nav-actions').classList.remove('hidden');
+            document.getElementById('nav-logo').classList.remove('hidden', 'md:flex');
+            
+            const searchInput = document.getElementById('main-search-input');
+            searchInput.value = '';
+            searchTerm = '';
             renderCatalog();
         }
 
