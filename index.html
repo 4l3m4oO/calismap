@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4f46e5">
+    <title>Calisthenics Mapper</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#121212',
+                        darkcard: '#1e1e1e',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Custom Scrollbar for a cleaner look */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        
+        #map { z-index: 10; }
+        .leaflet-popup-content-wrapper {
+            background-color: var(--popup-bg, #fff);
+            color: var(--popup-text, #000);
+            border-radius: 0.5rem;
+        }
+        .dark .leaflet-popup-content-wrapper {
+            --popup-bg: #1e1e1e;
+            --popup-text: #f3f4f6;
+        }
+        .dark .leaflet-popup-tip {
+            background-color: var(--popup-bg, #1e1e1e);
+        }
+        
+        /* Ocultar barra de rolagem no carrossel de imagens */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 dark:bg-darkbg dark:text-gray-100 h-screen flex flex-col transition-colors duration-300 overflow-hidden">
+
+    <!-- Navbar -->
+    <header class="bg-white dark:bg-darkcard shadow-md p-4 flex justify-between items-center z-20">
+        <div class="flex items-center gap-2">
+            <i data-lucide="dumbbell" class="text-indigo-600 dark:text-indigo-400"></i>
+            <h1 class="text-xl font-bold tracking-tight">Calisthenics Map</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="install-btn" onclick="installApp()" class="hidden p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-900 transition flex items-center gap-2 font-bold text-sm px-3 shadow-sm" title="Instalar Aplicativo">
+                <i data-lucide="smartphone" class="w-4 h-4"></i> <span class="hidden md:inline">Instalar</span>
+            </button>
+            <button onclick="toggleMapTheme()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Mudar cor do mapa">
+                <i data-lucide="map"></i>
+            </button>
+            <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Tema do App">
+                <i data-lucide="sun" id="theme-icon-light" class="hidden"></i>
+                <i data-lucide="moon" id="theme-icon-dark"></i>
+            </button>
+            <button onclick="openModal('dbModal')" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-1" title="Banco de Dados">
+                <i data-lucide="database"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- Toast for Map Selection -->
+        <div id="map-select-toast" onclick="cancelManualSelection()" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full shadow-lg z-[100] hidden cursor-pointer font-bold text-sm flex items-center gap-2 transition">
+            <i data-lucide="mouse-pointer-click" class="w-4 h-4"></i>
+            Clique no mapa para marcar ou aqui para cancelar
+        </div>
+
+        <!-- Map Section -->
+        <div class="w-full md:w-2/3 h-1/2 md:h-full relative">
+            <div id="map" class="w-full h-full z-0"></div>
+            
+            <!-- Floating Add Button -->
+            <button onclick="openAddModalBtn()" class="absolute bottom-4 right-4 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg z-20 transition transform hover:scale-105 flex items-center gap-2">
+                <i data-lucide="map-pin"></i>
+                <span class="font-semibold hidden md:inline">Adicionar Local</span>
+            </button>
+        </div>
+
+        <!-- Sidebar / Catalog Section -->
+        <div class="w-full md:w-1/3 h-1/2 md:h-full flex flex-col bg-gray-50 dark:bg-[#181818] border-l border-gray-200 dark:border-gray-800 z-10">
+            <!-- Filters -->
+            <div class="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-darkcard shrink-0 overflow-y-auto max-h-48 custom-scrollbar">
+                <h2 class="text-sm font-semibold mb-2 uppercase tracking-wider text-gray-500 dark:text-gray-400">Filtros</h2>
+                
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="arrow-down-up" class="w-4 h-4 text-gray-500"></i>
+                        <select id="sort-select" onchange="renderCatalog()" class="bg-gray-100 dark:bg-gray-800 text-sm rounded-md p-1 outline-none border border-transparent focus:border-indigo-500 w-full">
+                            <option value="distance">Mais Próximos</option>
+                            <option value="recent">Adicionados Recentemente</option>
+                            <option value="oldest">Mais Antigos</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="text-xs font-bold uppercase text-gray-500">Equipamentos</span>
+                        <div class="flex gap-2">
+                            <button onclick="selectAllEquips()" class="text-[10px] bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded hover:bg-gray-300 transition text-gray-700 dark:text-gray-300">Todos</button>
+                            <button onclick="clearFilters()" class="text-[10px] bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-2 py-1 rounded hover:bg-red-200 transition">Limpar</button>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 text-sm" id="filter-equipments">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <span class="text-xs font-bold uppercase text-gray-500 mt-2">Conservação (Média)</span>
+                    <div class="flex flex-wrap gap-1.5 text-sm" id="filter-conditions">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <span class="text-xs font-bold uppercase text-gray-500 mt-2">Preço</span>
+                    <div class="flex flex-wrap gap-1.5 text-sm" id="filter-prices">
+                        <label class="inline-flex items-center gap-1 cursor-pointer bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded-full text-xs hover:bg-gray-300 dark:hover:bg-gray-700 transition">
+                            <input type="checkbox" value="free" onchange="togglePriceFilter('free')" class="price-filter-cb hidden peer">
+                            <span class="w-3 h-3 rounded-full border border-gray-400 peer-checked:bg-green-500 peer-checked:border-green-500 transition-colors"></span>
+                            Grátis
+                        </label>
+                        <label class="inline-flex items-center gap-1 cursor-pointer bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded-full text-xs hover:bg-gray-300 dark:hover:bg-gray-700 transition">
+                            <input type="checkbox" value="paid" onchange="togglePriceFilter('paid')" class="price-filter-cb hidden peer">
+                            <span class="w-3 h-3 rounded-full border border-gray-400 peer-checked:bg-orange-500 peer-checked:border-orange-500 transition-colors"></span>
+                            Pago
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List -->
+            <div id="catalog-list" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- Cards rendered by JS -->
+                <div class="text-center text-gray-500 mt-10">Carregando locais...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODALS -->
+
+    <!-- Add Location Modal -->
+    <div id="addModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
+                <h3 class="text-lg font-bold">Novo Local de Treino</h3>
+                <button onclick="closeModal('addModal')" class="text-gray-500 hover:text-gray-800 dark:hover:text-white"><i data-lucide="x"></i></button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto flex-1 custom-scrollbar">
+                <form id="add-form" onsubmit="saveLocation(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Nome / Apelido do Local</label>
+                        <input type="text" id="loc-name" required class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Descrição Breve</label>
+                        <textarea id="loc-desc" rows="2" class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Valor do Acesso (R$)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-bold">R$</span>
+                            <input type="number" id="loc-price" value="0" min="0" step="0.01" class="w-full pl-9 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-1">Deixe 0 para locais <span class="text-green-600 dark:text-green-400 font-bold">GRÁTIS</span></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Fotos do Local (Até 3)</label>
+                        <div class="flex flex-col gap-2">
+                            <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <i data-lucide="image-plus" class="w-6 h-6 text-gray-400 mb-1"></i>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400"><span class="font-semibold">Galeria</span> ou <span class="font-semibold">Câmera</span></p>
+                                </div>
+                                <!-- Sem o capture, o celular pergunta qual app usar -->
+                                <input id="loc-photo" type="file" accept="image/*" multiple class="hidden" onchange="previewImages(event)" />
+                            </label>
+                            
+                            <!-- Container para as miniaturas -->
+                            <div id="photo-preview-container" class="flex gap-2 overflow-x-auto hide-scrollbar hidden pb-1">
+                                <!-- Preenchido pelo JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Equipamentos & Conservação</label>
+                        <div class="flex flex-col gap-2 text-sm max-h-60 overflow-y-auto custom-scrollbar pr-2" id="form-equipments">
+                            <!-- Rendered by JS -->
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium">Localização: <span id="loc-status" class="text-indigo-600 dark:text-indigo-400 font-bold">GPS Atual</span></span>
+                            <button type="button" onclick="startManualSelection()" class="text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded hover:bg-indigo-200 dark:hover:bg-indigo-900 transition flex items-center gap-1">
+                                <i data-lucide="map-pin" class="w-3 h-3"></i> Escolher no Mapa
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Por padrão, usa sua localização atual ou o centro da tela se o GPS falhar.</p>
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition">Salvar Local</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="detailsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="relative h-48 bg-gray-200 dark:bg-gray-800 shrink-0">
+                <div id="det-img-container" class="w-full h-full flex overflow-x-auto snap-x snap-mandatory hide-scrollbar">
+                    <!-- Imagens injetadas via JS -->
+                </div>
+                <div id="det-no-img" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 pointer-events-none">
+                    <i data-lucide="image-off" class="w-12 h-12 mb-2"></i>
+                    <span>Sem foto</span>
+                </div>
+                <button onclick="closeModal('detailsModal')" class="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 backdrop-blur-sm z-10">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 overflow-y-auto flex-1 custom-scrollbar">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 id="det-title" class="text-2xl font-bold">Nome</h3>
+                        <div class="flex items-center gap-2 mt-1 flex-wrap">
+                            <span id="det-cond-badge" class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase">Estado</span>
+                            <span id="det-price-badge" class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase">Preço</span>
+                        </div>
+                    </div>
+                    <span id="det-dist" class="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300 text-xs font-bold px-2 py-1 rounded shrink-0">-- km</span>
+                </div>
+                
+                <p id="det-desc" class="text-gray-600 dark:text-gray-300 text-sm mb-4">Descrição</p>
+                
+                <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Equipamentos</h4>
+                <div id="det-equips" class="flex flex-col gap-2 mb-6"></div>
+
+                <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Estimativa de Viagem</h4>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                    <!-- Walk -->
+                    <div class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-center flex flex-col items-center justify-center">
+                        <i data-lucide="footprints" class="w-5 h-5 mb-1 text-green-500"></i>
+                        <span id="det-walk-time" class="font-bold text-sm">--</span>
+                        <span id="det-walk-cal" class="text-xs text-gray-500">-- kcal</span>
+                        <span id="det-walk-arr" class="text-[10px] text-gray-400 mt-1">Chegada: --</span>
+                    </div>
+                    <!-- Run -->
+                    <div class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-center flex flex-col items-center justify-center">
+                        <i data-lucide="person-standing" class="w-5 h-5 mb-1 text-orange-500"></i>
+                        <span id="det-run-time" class="font-bold text-sm">--</span>
+                        <span id="det-run-cal" class="text-xs text-gray-500">-- kcal</span>
+                        <span id="det-run-arr" class="text-[10px] text-gray-400 mt-1">Chegada: --</span>
+                    </div>
+                    <!-- Bike -->
+                    <div class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-center flex flex-col items-center justify-center">
+                        <i data-lucide="bike" class="w-5 h-5 mb-1 text-blue-500"></i>
+                        <span id="det-bike-time" class="font-bold text-sm">--</span>
+                        <span id="det-bike-cal" class="text-xs text-gray-500">-- kcal</span>
+                        <span id="det-bike-arr" class="text-[10px] text-gray-400 mt-1">Chegada: --</span>
+                    </div>
+                    <!-- Car -->
+                    <div class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-center flex flex-col items-center justify-center">
+                        <i data-lucide="car" class="w-5 h-5 mb-1 text-red-500"></i>
+                        <span id="det-car-time" class="font-bold text-sm">--</span>
+                        <span class="text-xs text-gray-500">-</span>
+                        <span id="det-car-arr" class="text-[10px] text-gray-400 mt-1">Chegada: --</span>
+                    </div>
+                </div>
+
+                <button onclick="viewOnMap()" class="w-full mb-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
+                    <i data-lucide="map" class="w-5 h-5"></i>
+                    Ver no Mapa
+                </button>
+                <a id="det-route-btn" href="#" target="_blank" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
+                    <i data-lucide="navigation" class="w-5 h-5"></i>
+                    Traçar Rota no Google Maps
+                </a>
+                <button onclick="deleteLocation()" class="w-full mt-2 bg-red-100 dark:bg-red-900/20 text-red-600 hover:bg-red-200 dark:hover:bg-red-900/40 font-bold py-2 rounded-lg transition text-sm">
+                    Remover Local
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DB Modal -->
+    <div id="dbModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
+                <h3 class="text-lg font-bold">Banco de Dados</h3>
+                <button onclick="closeDbModal()" class="text-gray-500 hover:text-gray-800 dark:hover:text-white"><i data-lucide="x"></i></button>
+            </div>
+            
+            <!-- Main DB Menu -->
+            <div id="db-menu" class="p-5 flex flex-col gap-3">
+                <button onclick="exportData()" class="w-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-5 h-5"></i> Exportar Dados (.json)
+                </button>
+                
+                <label class="w-full bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="folder-plus" class="w-5 h-5"></i> Mesclar Dados (.json)
+                    <input type="file" accept=".json" class="hidden" onchange="mergeData(event)">
+                </label>
+
+                <button onclick="confirmDbAction('replace')" class="w-full bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
+                    <i data-lucide="upload" class="w-5 h-5"></i> Substituir Dados (.json)
+                </button>
+
+                <button onclick="confirmDbAction('clear')" class="w-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i> Limpar Todos os Dados
+                </button>
+            </div>
+
+            <!-- Confirmation Menu -->
+            <div id="db-confirm" class="p-5 flex-col gap-4 hidden">
+                <div class="text-center mb-4 text-red-600 dark:text-red-400">
+                    <i data-lucide="alert-triangle" class="w-12 h-12 mx-auto mb-2"></i>
+                    <h4 class="font-bold text-lg" id="db-confirm-title">Atenção!</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-2" id="db-confirm-msg">Esta ação é irreversível.</p>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <!-- For Clear -->
+                    <button id="db-btn-clear" onclick="executeClear()" class="hidden w-full bg-red-600 text-white font-bold py-3 rounded-lg transition opacity-50 cursor-not-allowed">
+                        <span id="text-btn-clear">Confirmar (15s)</span>
+                    </button>
+                    
+                    <!-- For Replace -->
+                    <label id="db-btn-replace" class="hidden w-full bg-orange-600 text-white font-bold py-3 rounded-lg transition opacity-50 cursor-not-allowed text-center flex items-center justify-center">
+                        <span id="text-btn-replace">Confirmar e Importar (15s)</span>
+                        <input type="file" accept=".json" class="hidden" id="db-input-replace" disabled onchange="replaceData(event)">
+                    </label>
+
+                    <button onclick="cancelDbAction()" class="w-full bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold py-3 rounded-lg transition">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // --- CONSTANTS & CONFIG ---
+        const DB_KEY = 'calisthenics_db';
+        const EQUIPMENTS = [
+            { id: 'pullup_all', label: 'Barra Fixa (Todas)' },
+            { id: 'pullup_high', label: 'Barra Fixa Alta' },
+            { id: 'pullup_med', label: 'Barra Fixa Média' },
+            { id: 'pullup_low', label: 'Barra Fixa Baixa' },
+            { id: 'monkey_bar', label: 'Monkey Bar' },
+            { id: 'rings', label: 'Argolas' },
+            { id: 'ladder', label: 'Espaldar' },
+            { id: 'ab_bench', label: 'Prancha Abdominal' },
+            { id: 'outros', label: 'Outros (Especificar)' }
+        ];
+
+        const CONDITIONS = {
+            6: { label: 'Excelente', bg: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500', badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
+            5: { label: 'Ótimo', bg: 'bg-green-500', text: 'text-green-600 dark:text-green-400', border: 'border-green-500', badge: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' },
+            4: { label: 'Bom', bg: 'bg-teal-500', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-500', badge: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300' },
+            3: { label: 'Mediano', bg: 'bg-yellow-500', text: 'text-yellow-600 dark:text-yellow-400', border: 'border-yellow-500', badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300' },
+            2: { label: 'Ruim', bg: 'bg-orange-500', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-500', badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300' },
+            1: { label: 'Péssimo', bg: 'bg-red-500', text: 'text-red-600 dark:text-red-400', border: 'border-red-500', badge: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' },
+            0: { label: 'Não informado', bg: 'bg-gray-400', text: 'text-gray-600 dark:text-gray-400', border: 'border-gray-200 dark:border-gray-800', badge: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' }
+        };
+
+        // --- STATE ---
+        let map;
+        let userLocation = null;
+        let markerMap = {}; // Tracks markers by location ID
+        let locations = [];
+        let filterEquips = new Set();
+        let filterConditions = new Set();
+        let filterPrices = new Set();
+        let currentPhotosBase64 = [];
+        let selectedLocationId = null;
+        let tempLocation = null;
+        let isSelectingLocation = false;
+        let tileLayer;
+        let mapTheme = 'light';
+        let dbCountdownInterval = null;
+        const MAP_URLS = {
+            light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+            dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        };
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initTheme();
+            initPWA();
+            initMap();
+            loadDB();
+            renderEquipmentFilters();
+            renderConditionFilters();
+            renderEquipmentForm();
+        });
+
+        // --- PWA SETUP ---
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); // Previne a exibição automática da barra no Android
+            deferredPrompt = e;
+            // Mostra o botão de instalação no cabeçalho
+            const installBtn = document.getElementById('install-btn');
+            if (installBtn) installBtn.classList.remove('hidden');
+        });
+
+        function installApp() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('Usuário aceitou a instalação do PWA');
+                    document.getElementById('install-btn').classList.add('hidden');
+                }
+                deferredPrompt = null;
+            });
+        }
+
+        function initPWA() {
+            // Cria um ícone SVG dinamicamente para o Manifest
+            const iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M6 6.5v11"/><path d="M18 6.5v11"/><path d="M2 12h20"/><path d="M8 8v8"/><path d="M16 8v8"/></svg>';
+            const iconBase64 = 'data:image/svg+xml;base64,' + btoa(iconSvg);
+
+            // 1. Gera o Manifest.json dinamicamente e injeta no cabeçalho
+            const manifest = {
+                name: "Calisthenics Mapper",
+                short_name: "Calisthenics",
+                description: "Catálogo de locais para calistenia",
+                start_url: window.location.href.split('?')[0],
+                display: "standalone",
+                background_color: document.documentElement.classList.contains('dark') ? "#121212" : "#f3f4f6",
+                theme_color: "#4f46e5",
+                icons: [{ src: iconBase64, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }]
+            };
+
+            const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const manifestUrl = URL.createObjectURL(manifestBlob);
+            
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestUrl;
+            document.head.appendChild(link);
+
+            // 2. Registra um Service Worker (critério obrigatório para PWA)
+            const swCode = `
+                self.addEventListener('install', (e) => self.skipWaiting());
+                self.addEventListener('activate', (e) => self.clients.claim());
+                self.addEventListener('fetch', (e) => {
+                    // Responde com a rede, se falhar, retorna erro sem travar
+                    e.respondWith(fetch(e.request).catch(() => new Response('App Offline')));
+                });
+            `;
+            const swBlob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(swBlob);
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => console.log('Service Worker Registrado (PWA)'))
+                    .catch(err => console.error('Erro no Service Worker:', err));
+            }
+        }
+
+        function initTheme() {
+            const isDark = localStorage.getItem('theme') !== 'light';
+            if (!isDark) {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('theme-icon-dark').classList.add('hidden');
+                document.getElementById('theme-icon-light').classList.remove('hidden');
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.classList.contains('dark');
+            if (isDark) {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                document.getElementById('theme-icon-dark').classList.add('hidden');
+                document.getElementById('theme-icon-light').classList.remove('hidden');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                document.getElementById('theme-icon-dark').classList.remove('hidden');
+                document.getElementById('theme-icon-light').classList.add('hidden');
+            }
+        }
+
+        function initMap() {
+            // Default center (Brazil approx)
+            map = L.map('map').setView([-14.235, -51.925], 4);
+
+            tileLayer = L.tileLayer(MAP_URLS[mapTheme], {
+                attribution: '&copy; OpenStreetMap & CartoDB'
+            }).addTo(map);
+
+            // Handle manual map selection
+            map.on('click', function(e) {
+                if (!isSelectingLocation) return;
+                isSelectingLocation = false;
+                document.getElementById('map-select-toast').classList.add('hidden');
+                tempLocation = { lat: e.latlng.lat, lng: e.latlng.lng };
+                document.getElementById('loc-status').innerText = 'Manual (Marcado no Mapa)';
+                openModal('addModal');
+            });
+
+            // Try to get user location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        map.setView([userLocation.lat, userLocation.lng], 14);
+                        
+                        // User Marker
+                        L.circleMarker([userLocation.lat, userLocation.lng], {
+                            color: '#4f46e5',
+                            fillColor: '#4f46e5',
+                            fillOpacity: 0.5,
+                            radius: 8
+                        }).addTo(map).bindPopup("Sua Localização").openPopup();
+
+                        renderCatalog(); // Re-render with distance sorting
+                    },
+                    (error) => {
+                        console.warn("Geolocalização negada ou falhou. Usando centro padrão.");
+                    },
+                    { enableHighAccuracy: true }
+                );
+            }
+        }
+
+        // --- DATA HELPERS ---
+        // Normalizes old database string arrays into objects with conditions
+        function normalizeEqs(eqs) {
+            if (!eqs) return [];
+            return eqs.map(eq => typeof eq === 'string' ? { id: eq, condition: 0 } : eq);
+        }
+
+        function getAverageCondition(eqs) {
+            const valid = eqs.filter(e => e.condition > 0);
+            if (valid.length === 0) return 0;
+            const sum = valid.reduce((acc, curr) => acc + parseInt(curr.condition), 0);
+            return Math.round(sum / valid.length);
+        }
+
+        // --- DATABASE FUNCTIONS ---
+        function loadDB() {
+            const data = localStorage.getItem(DB_KEY);
+            if (data) {
+                try {
+                    locations = JSON.parse(data);
+                } catch (e) {
+                    locations = [];
+                }
+            } else {
+                locations = [];
+            }
+            refreshMapMarkers();
+            renderCatalog();
+        }
+
+        function saveDB() {
+            localStorage.setItem(DB_KEY, JSON.stringify(locations));
+            refreshMapMarkers();
+            renderCatalog();
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(locations, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `calisthenics_db_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function closeDbModal() {
+            closeModal('dbModal');
+            cancelDbAction();
+        }
+
+        function mergeData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        const existingIds = new Set(locations.map(l => l.id));
+                        const newLocs = imported.filter(l => !existingIds.has(l.id));
+                        locations = [...locations, ...newLocs];
+                        saveDB();
+                        closeDbModal();
+                        alert(`Dados mesclados com sucesso! ${newLocs.length} novos locais adicionados.`);
+                    } else {
+                        alert('Arquivo inválido.');
+                    }
+                } catch (err) {
+                    alert('Erro ao ler arquivo JSON.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function replaceData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        locations = imported;
+                        saveDB();
+                        closeDbModal();
+                        alert('Banco de dados substituído com sucesso!');
+                    } else {
+                        alert('Arquivo inválido.');
+                    }
+                } catch (err) {
+                    alert('Erro ao ler arquivo JSON.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function executeClear() {
+            locations = [];
+            saveDB();
+            closeDbModal();
+            alert('Todos os dados foram apagados.');
+        }
+
+        function confirmDbAction(actionType) {
+            document.getElementById('db-menu').classList.add('hidden');
+            document.getElementById('db-menu').classList.remove('flex');
+            document.getElementById('db-confirm').classList.remove('hidden');
+            document.getElementById('db-confirm').classList.add('flex');
+            
+            const btnClear = document.getElementById('db-btn-clear');
+            const btnReplace = document.getElementById('db-btn-replace');
+            const textClear = document.getElementById('text-btn-clear');
+            const textReplace = document.getElementById('text-btn-replace');
+            const inputReplace = document.getElementById('db-input-replace');
+            
+            btnClear.classList.add('hidden');
+            btnReplace.classList.add('hidden');
+            
+            let btn, textSpan;
+            let seconds = 15;
+            
+            if(actionType === 'clear') {
+                document.getElementById('db-confirm-title').innerText = 'Limpar Dados';
+                document.getElementById('db-confirm-msg').innerText = 'Isso apagará TODOS os locais salvos. Esta ação não pode ser desfeita.';
+                btn = btnClear;
+                textSpan = textClear;
+                btn.classList.remove('hidden');
+            } else if (actionType === 'replace') {
+                document.getElementById('db-confirm-title').innerText = 'Substituir Dados';
+                document.getElementById('db-confirm-msg').innerText = 'Isso apagará seus dados atuais e os substituirá pelo arquivo selecionado.';
+                btn = btnReplace;
+                textSpan = textReplace;
+                btn.classList.remove('hidden');
+            }
+
+            // Reset button state
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btn.classList.remove('hover:bg-red-700', 'hover:bg-orange-700', 'cursor-pointer');
+            if(inputReplace) inputReplace.disabled = true;
+            
+            textSpan.innerText = `Confirmar (${seconds}s)`;
+
+            clearInterval(dbCountdownInterval);
+            dbCountdownInterval = setInterval(() => {
+                seconds--;
+                if(seconds <= 0) {
+                    clearInterval(dbCountdownInterval);
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    if(actionType === 'clear') {
+                        textSpan.innerText = 'Confirmar Exclusão';
+                        btn.classList.add('hover:bg-red-700');
+                    } else {
+                        textSpan.innerText = 'Selecionar Arquivo e Substituir';
+                        btn.classList.add('hover:bg-orange-700', 'cursor-pointer');
+                        if(inputReplace) inputReplace.disabled = false;
+                    }
+                } else {
+                    textSpan.innerText = `Confirmar (${seconds}s)`;
+                }
+            }, 1000);
+        }
+
+        function cancelDbAction() {
+            clearInterval(dbCountdownInterval);
+            document.getElementById('db-confirm').classList.add('hidden');
+            document.getElementById('db-confirm').classList.remove('flex');
+            document.getElementById('db-menu').classList.remove('hidden');
+            document.getElementById('db-menu').classList.add('flex');
+        }
+
+        // --- UI & RENDER LOGIC ---
+        function renderEquipmentFilters() {
+            const container = document.getElementById('filter-equipments');
+            let html = '';
+            EQUIPMENTS.forEach(eq => {
+                html += `
+                    <label class="inline-flex items-center gap-1 cursor-pointer bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded-full text-xs hover:bg-gray-300 dark:hover:bg-gray-700 transition">
+                        <input type="checkbox" value="${eq.id}" onchange="toggleFilter('${eq.id}')" class="eq-filter-cb hidden peer">
+                        <span class="w-3 h-3 rounded-full border border-gray-400 peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-colors"></span>
+                        ${eq.label}
+                    </label>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderConditionFilters() {
+            const container = document.getElementById('filter-conditions');
+            let html = '';
+            [6, 5, 4, 3, 2, 1, 0].forEach(key => {
+                const c = CONDITIONS[key];
+                html += `
+                    <label class="inline-flex items-center gap-1 cursor-pointer bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded-full text-xs hover:bg-gray-300 dark:hover:bg-gray-700 transition">
+                        <input type="checkbox" value="${key}" onchange="toggleCondFilter('${key}')" class="cond-filter-cb hidden peer">
+                        <span class="w-2.5 h-2.5 rounded-full ${c.bg} border border-gray-400 peer-checked:ring-2 peer-checked:ring-offset-1 peer-checked:ring-indigo-500 transition-all"></span>
+                        ${c.label}
+                    </label>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderEquipmentForm() {
+            const container = document.getElementById('form-equipments');
+            let html = '';
+            const condOptions = Object.keys(CONDITIONS).sort((a,b)=>b-a).map(k => `<option value="${k}" ${k == 0 ? 'selected' : ''}>${k == 0 ? 'Estado: ' : ''}${CONDITIONS[k].label}</option>`).join('');
+
+            EQUIPMENTS.forEach(eq => {
+                html += `
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-2 bg-gray-50 dark:bg-gray-800/50">
+                        <label class="flex items-center gap-2 cursor-pointer font-medium">
+                            <input type="checkbox" id="cb-eq-${eq.id}" value="${eq.id}" onchange="toggleEqForm('${eq.id}')" class="form-eq-cb text-indigo-600 rounded focus:ring-indigo-500 bg-gray-200 border-gray-300">
+                            ${eq.label}
+                        </label>
+                        <div id="eq-details-${eq.id}" class="hidden mt-2 pl-6 flex flex-col gap-2 border-l-2 border-indigo-200 dark:border-indigo-900 ml-1.5">
+                            ${eq.id === 'outros' ? `<input type="text" id="eq-desc-${eq.id}" placeholder="Descreva os aparelhos..." class="w-full text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-1.5 focus:ring-1 focus:ring-indigo-500 outline-none">` : ''}
+                            <select id="eq-cond-${eq.id}" class="w-full text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded p-1.5 focus:ring-1 focus:ring-indigo-500 outline-none text-gray-700 dark:text-gray-300">
+                                ${condOptions}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function toggleEqForm(id) {
+            const details = document.getElementById(`eq-details-${id}`);
+            if(document.getElementById(`cb-eq-${id}`).checked) {
+                details.classList.remove('hidden');
+            } else {
+                details.classList.add('hidden');
+            }
+        }
+
+        function toggleFilter(eqId) {
+            if (filterEquips.has(eqId)) filterEquips.delete(eqId);
+            else filterEquips.add(eqId);
+            renderCatalog();
+        }
+
+        function toggleCondFilter(condId) {
+            if (filterConditions.has(condId)) filterConditions.delete(condId);
+            else filterConditions.add(condId);
+            renderCatalog();
+        }
+
+        function togglePriceFilter(priceId) {
+            if (filterPrices.has(priceId)) filterPrices.delete(priceId);
+            else filterPrices.add(priceId);
+            renderCatalog();
+        }
+
+        function clearFilters() {
+            filterEquips.clear();
+            filterConditions.clear();
+            filterPrices.clear();
+            document.querySelectorAll('.eq-filter-cb').forEach(cb => cb.checked = false);
+            document.querySelectorAll('.cond-filter-cb').forEach(cb => cb.checked = false);
+            document.querySelectorAll('.price-filter-cb').forEach(cb => cb.checked = false);
+            renderCatalog();
+        }
+
+        function selectAllEquips() {
+            EQUIPMENTS.forEach(eq => filterEquips.add(eq.id));
+            document.querySelectorAll('.eq-filter-cb').forEach(cb => cb.checked = true);
+            renderCatalog();
+        }
+
+        function refreshMapMarkers() {
+            Object.values(markerMap).forEach(m => map.removeLayer(m));
+            markerMap = {};
+
+            const filtered = getFilteredLocations();
+
+            filtered.forEach(loc => {
+                const eqs = normalizeEqs(loc.equipments);
+                const avgCond = getAverageCondition(eqs);
+                const badgeClass = CONDITIONS[avgCond].bg;
+
+                // Color indicator dot based on the conservation average
+                const iconHTML = `<div class="bg-indigo-600 text-white rounded-full p-1 border-2 border-white shadow-lg flex items-center justify-center w-8 h-8 relative">
+                    <i data-lucide="dumbbell" class="w-4 h-4"></i>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full ${badgeClass} border border-white"></div>
+                </div>`;
+                
+                const customIcon = L.divIcon({
+                    html: iconHTML,
+                    className: '',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32],
+                    popupAnchor: [0, -32]
+                });
+
+                const distStr = userLocation ? formatDistance(calculateDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng)) : '';
+                const locPhotos = loc.photos || (loc.photo ? [loc.photo] : []);
+                
+                const marker = L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(map);
+                
+                let photoHTML = '';
+                if(locPhotos.length > 0) {
+                    photoHTML = `<img src="${locPhotos[0]}" class="w-full h-24 object-cover rounded mt-1 border border-gray-200 dark:border-gray-700">`;
+                }
+
+                marker.bindPopup(`
+                    <div class="text-center p-1 min-w-[130px]">
+                        <h4 class="font-bold text-sm leading-tight">${loc.name}</h4>
+                        ${photoHTML}
+                        ${distStr ? `<p class="text-[10px] font-bold text-indigo-500 my-1">${distStr}</p>` : '<div class="my-1"></div>'}
+                        <button onclick="openDetails('${loc.id}')" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-2 py-1.5 rounded w-full font-bold hover:bg-indigo-200 transition">Ver Detalhes</button>
+                    </div>
+                `);
+                markerMap[loc.id] = marker;
+            });
+            lucide.createIcons();
+        }
+
+        function getFilteredLocations() {
+            return locations.filter(loc => {
+                const eqs = normalizeEqs(loc.equipments);
+                
+                if (filterEquips.size > 0) {
+                    const locEqIds = eqs.map(e => e.id);
+                    let hasAll = true;
+                    for (let eq of filterEquips) {
+                        if (!locEqIds.includes(eq)) {
+                            hasAll = false;
+                            break;
+                        }
+                    }
+                    if(!hasAll) return false;
+                }
+
+                if (filterConditions.size > 0) {
+                    const avg = getAverageCondition(eqs);
+                    if (!filterConditions.has(avg.toString())) return false;
+                }
+
+                if (filterPrices.size > 0) {
+                    const priceNum = parseFloat(loc.price) || 0;
+                    const isFree = priceNum === 0;
+                    if (filterPrices.has('free') && !filterPrices.has('paid') && !isFree) return false;
+                    if (filterPrices.has('paid') && !filterPrices.has('free') && isFree) return false;
+                }
+
+                return true;
+            });
+        }
+
+        function renderCatalog() {
+            const container = document.getElementById('catalog-list');
+            let filtered = getFilteredLocations();
+
+            // Calculate distance for sorting
+            if (userLocation) {
+                filtered.forEach(loc => {
+                    loc.tempDist = calculateDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng);
+                });
+            } else {
+                filtered.forEach(loc => loc.tempDist = 99999);
+            }
+
+            const sortBy = document.getElementById('sort-select').value;
+            if (sortBy === 'distance') {
+                filtered.sort((a, b) => a.tempDist - b.tempDist);
+            } else if (sortBy === 'recent') {
+                filtered.sort((a, b) => b.timestamp - a.timestamp);
+            } else if (sortBy === 'oldest') {
+                filtered.sort((a, b) => a.timestamp - b.timestamp);
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400 mt-10">Nenhum local encontrado com os filtros atuais.</div>`;
+                refreshMapMarkers();
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(loc => {
+                const distStr = userLocation ? formatDistance(loc.tempDist) : '-- km';
+                const locPhotos = loc.photos || (loc.photo ? [loc.photo] : []);
+                const hasPhoto = locPhotos.length > 0;
+                
+                const eqs = normalizeEqs(loc.equipments);
+                const avgCond = getAverageCondition(eqs);
+                const condData = CONDITIONS[avgCond];
+
+                const priceNum = parseFloat(loc.price) || 0;
+                const priceStr = priceNum === 0 ? 'Grátis' : `R$ ${priceNum.toFixed(2).replace('.', ',')}`;
+                const priceClass = priceNum === 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400';
+
+                const eqNames = eqs.map(eq => {
+                    const f = EQUIPMENTS.find(e => e.id === eq.id);
+                    let name = f ? f.label : eq.id;
+                    if(eq.id === 'outros' && eq.desc) name += ` (${eq.desc})`;
+                    return name;
+                }).slice(0, 3).join(', ') + ((eqs.length > 3) ? '...' : '');
+
+                html += `
+                    <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard border-l-4 ${condData.border} border-y border-r border-y-gray-200 border-r-gray-200 dark:border-y-gray-800 dark:border-r-gray-800 rounded-xl p-3 shadow-sm hover:shadow-md transition cursor-pointer flex gap-3">
+                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-lg shrink-0 overflow-hidden relative">
+                            ${hasPhoto ? `<img src="${locPhotos[0]}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i data-lucide="image" class="w-8 h-8"></i></div>`}
+                        </div>
+                        <div class="flex-1 min-w-0 flex flex-col justify-center">
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-bold text-base truncate pr-2">${loc.name}</h3>
+                                <div class="flex flex-col items-end gap-1">
+                                    <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 shrink-0 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">${distStr}</span>
+                                    <span class="text-[10px] font-bold ${priceClass} shrink-0">${priceStr}</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">${loc.desc || 'Sem descrição'}</p>
+                            <p class="text-[10px] text-gray-400 mt-1.5 truncate"><span class="font-semibold">Eq:</span> ${eqNames || 'Não informado'}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            lucide.createIcons();
+            refreshMapMarkers(); // Update map to reflect filters
+        }
+
+        // --- MATH & UTILS ---
+        // Haversine formula
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function formatDistance(distKm) {
+            if (distKm < 1) {
+                return Math.round(distKm * 1000) + ' m';
+            }
+            return distKm.toFixed(1) + ' km';
+        }
+
+        function getETAString(minutes) {
+            if (minutes < 60) return `${Math.round(minutes)} min`;
+            const h = Math.floor(minutes / 60);
+            const m = Math.round(minutes % 60);
+            return `${h}h${m.toString().padStart(2,'0')}`;
+        }
+
+        function getArrivalTime(minutes) {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + minutes);
+            return now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function toggleMapTheme() {
+            mapTheme = mapTheme === 'light' ? 'dark' : 'light';
+            tileLayer.setUrl(MAP_URLS[mapTheme]);
+        }
+
+        // --- ADD LOCATION ---
+        function openAddModalBtn() {
+            tempLocation = null;
+            document.getElementById('loc-status').innerText = userLocation ? 'GPS Atual' : 'Centro do Mapa';
+            openModal('addModal');
+        }
+
+        function startManualSelection() {
+            closeModal('addModal');
+            isSelectingLocation = true;
+            document.getElementById('map-select-toast').classList.remove('hidden');
+        }
+
+        function cancelManualSelection() {
+            isSelectingLocation = false;
+            document.getElementById('map-select-toast').classList.add('hidden');
+            openModal('addModal');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById(id).classList.add('flex');
+            if(id === 'addModal' && !userLocation) {
+                alert("Usando o centro do mapa como localização, pois o GPS não está disponível.");
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            document.getElementById(id).classList.remove('flex');
+            if(id === 'addModal') {
+                document.getElementById('add-form').reset();
+                currentPhotosBase64 = [];
+                renderPhotoPreviews();
+                // re-hide equipment sub-forms
+                document.querySelectorAll('[id^="eq-details-"]').forEach(el => el.classList.add('hidden'));
+            }
+        }
+
+        function previewImages(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+
+            let availableSlots = 3 - currentPhotosBase64.length;
+            if (availableSlots <= 0) {
+                alert("Você já atingiu o limite de 3 fotos.");
+                event.target.value = '';
+                return;
+            }
+
+            const filesToProcess = files.slice(0, availableSlots);
+
+            filesToProcess.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const maxW = 800;
+                        const maxH = 800;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > maxW) {
+                                height *= maxW / width;
+                                width = maxW;
+                            }
+                        } else {
+                            if (height > maxH) {
+                                width *= maxH / height;
+                                height = maxH;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        currentPhotosBase64.push(dataUrl);
+                        renderPhotoPreviews();
+                    }
+                    img.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            });
+            event.target.value = ''; // Limpa o input para poder adicionar a mesma foto dnv se quiser
+        }
+
+        function renderPhotoPreviews() {
+            const container = document.getElementById('photo-preview-container');
+            if (currentPhotosBase64.length === 0) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+                return;
+            }
+            container.classList.remove('hidden');
+            let html = '';
+            currentPhotosBase64.forEach((src, idx) => {
+                html += `
+                    <div class="relative w-20 h-20 shrink-0">
+                        <img src="${src}" class="w-full h-full object-cover rounded-lg border border-gray-300 dark:border-gray-600">
+                        <button type="button" onclick="removePhoto(${idx})" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-md">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function removePhoto(idx) {
+            currentPhotosBase64.splice(idx, 1);
+            renderPhotoPreviews();
+        }
+
+        function saveLocation(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('loc-name').value;
+            const desc = document.getElementById('loc-desc').value;
+            const price = parseFloat(document.getElementById('loc-price').value) || 0;
+            
+            const selectedEqs = [];
+            EQUIPMENTS.forEach(eq => {
+                const cb = document.getElementById(`cb-eq-${eq.id}`);
+                if(cb && cb.checked) {
+                    const cond = document.getElementById(`eq-cond-${eq.id}`).value;
+                    const item = { id: eq.id, condition: parseInt(cond) };
+                    if(eq.id === 'outros') {
+                        item.desc = document.getElementById(`eq-desc-${eq.id}`).value;
+                    }
+                    selectedEqs.push(item);
+                }
+            });
+
+            let lat, lng;
+            if (tempLocation) {
+                lat = tempLocation.lat;
+                lng = tempLocation.lng;
+            } else if (userLocation) {
+                lat = userLocation.lat;
+                lng = userLocation.lng;
+            } else {
+                const center = map.getCenter();
+                lat = center.lat;
+                lng = center.lng;
+            }
+
+            const newLoc = {
+                id: 'loc_' + Date.now(),
+                name,
+                desc,
+                price,
+                lat,
+                lng,
+                equipments: selectedEqs,
+                photos: [...currentPhotosBase64],
+                timestamp: Date.now()
+            };
+
+            locations.push(newLoc);
+            saveDB();
+            closeModal('addModal');
+        }
+
+        // --- DETAILS ---
+        function openDetails(id) {
+            const loc = locations.find(l => l.id === id);
+            if (!loc) return;
+            selectedLocationId = id;
+
+            // Pan the map behind the modal to select the card visually
+            if(markerMap[id]) {
+                map.setView([loc.lat, loc.lng]);
+            }
+
+            document.getElementById('det-title').innerText = loc.name;
+            document.getElementById('det-desc').innerText = loc.desc || 'Nenhuma descrição fornecida.';
+            
+            const photoContainer = document.getElementById('det-img-container');
+            const noImgEl = document.getElementById('det-no-img');
+            photoContainer.innerHTML = '';
+            
+            const locPhotos = loc.photos || (loc.photo ? [loc.photo] : []);
+
+            if (locPhotos.length > 0) {
+                noImgEl.classList.add('hidden');
+                locPhotos.forEach(src => {
+                    photoContainer.innerHTML += `<img src="${src}" class="w-full h-full object-cover shrink-0 snap-center">`;
+                });
+            } else {
+                noImgEl.classList.remove('hidden');
+            }
+
+            // Equipments & Conditions & Price
+            const eqs = normalizeEqs(loc.equipments);
+            const avgCond = getAverageCondition(eqs);
+            const avgData = CONDITIONS[avgCond];
+
+            const badgeCond = document.getElementById('det-cond-badge');
+            badgeCond.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase ${avgData.badge}`;
+            badgeCond.innerText = `Estado: ${avgData.label}`;
+
+            const priceNum = parseFloat(loc.price) || 0;
+            const badgePrice = document.getElementById('det-price-badge');
+            if(priceNum === 0) {
+                badgePrice.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300`;
+                badgePrice.innerText = `Grátis`;
+            } else {
+                badgePrice.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300`;
+                badgePrice.innerText = `R$ ${priceNum.toFixed(2).replace('.', ',')}`;
+            }
+
+            const eqContainer = document.getElementById('det-equips');
+            eqContainer.innerHTML = '';
+            if (eqs.length > 0) {
+                eqs.forEach(eq => {
+                    const f = EQUIPMENTS.find(e => e.id === eq.id);
+                    const label = f ? f.label : eq.id;
+                    const cData = CONDITIONS[eq.condition || 0];
+                    const extra = eq.desc ? `<span class="text-gray-500 dark:text-gray-400 italic text-[10px] block mt-0.5">- ${eq.desc}</span>` : '';
+                    
+                    eqContainer.innerHTML += `
+                        <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-semibold">${label}</span>
+                                ${extra}
+                            </div>
+                            <span class="text-[10px] px-1.5 py-0.5 font-bold rounded-full ${cData.badge}">${cData.label}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                eqContainer.innerHTML = `<span class="text-xs text-gray-400">Nenhum equipamento listado.</span>`;
+            }
+
+            // Calculations
+            let dist = 0;
+            if (userLocation) {
+                dist = calculateDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng);
+                document.getElementById('det-dist').innerText = formatDistance(dist);
+                
+                const wMin = dist * 12;
+                const rMin = dist * 7.5;
+                const bMin = dist * 4;
+                const cMin = dist * 1.5;
+
+                document.getElementById('det-walk-time').innerText = getETAString(wMin);
+                document.getElementById('det-walk-cal').innerText = Math.round(dist * 50) + ' kcal';
+                document.getElementById('det-walk-arr').innerText = 'Chegada: ' + getArrivalTime(wMin);
+
+                document.getElementById('det-run-time').innerText = getETAString(rMin);
+                document.getElementById('det-run-cal').innerText = Math.round(dist * 70) + ' kcal';
+                document.getElementById('det-run-arr').innerText = 'Chegada: ' + getArrivalTime(rMin);
+
+                document.getElementById('det-bike-time').innerText = getETAString(bMin);
+                document.getElementById('det-bike-cal').innerText = Math.round(dist * 30) + ' kcal';
+                document.getElementById('det-bike-arr').innerText = 'Chegada: ' + getArrivalTime(bMin);
+
+                document.getElementById('det-car-time').innerText = getETAString(cMin);
+                document.getElementById('det-car-arr').innerText = 'Chegada: ' + getArrivalTime(cMin);
+
+                const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${loc.lat},${loc.lng}&travelmode=walking`;
+                document.getElementById('det-route-btn').href = gmapsUrl;
+                document.getElementById('det-route-btn').classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                document.getElementById('det-dist').innerText = '? km';
+                ['walk', 'run', 'bike', 'car'].forEach(m => {
+                    document.getElementById(`det-${m}-time`).innerText = '--';
+                    if(m !== 'car') document.getElementById(`det-${m}-cal`).innerText = '-- kcal';
+                    document.getElementById(`det-${m}-arr`).innerText = 'Chegada: --';
+                });
+                document.getElementById('det-route-btn').href = "#";
+                document.getElementById('det-route-btn').classList.add('opacity-50', 'pointer-events-none');
+            }
+
+            openModal('detailsModal');
+        }
+
+        function viewOnMap() {
+            if(!selectedLocationId) return;
+            closeModal('detailsModal');
+            const loc = locations.find(l => l.id === selectedLocationId);
+            if(loc && markerMap[selectedLocationId]) {
+                // Fly smoothly to the marker and open its popup
+                map.flyTo([loc.lat, loc.lng], 16, { duration: 0.5 });
+                setTimeout(() => {
+                    markerMap[selectedLocationId].openPopup();
+                }, 550);
+            }
+        }
+
+        function deleteLocation() {
+            if(!selectedLocationId) return;
+            if(confirm("Tem certeza que deseja excluir este local?")) {
+                locations = locations.filter(l => l.id !== selectedLocationId);
+                saveDB();
+                closeModal('detailsModal');
+            }
+        }
+    </script>
+</body>
+</html>
