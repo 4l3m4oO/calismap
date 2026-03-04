@@ -67,7 +67,7 @@
 
     <!-- Navbar -->
     <header class="bg-white dark:bg-darkcard shadow-md p-3 md:p-4 flex justify-between items-center z-20 gap-2">
-        <div class="flex items-center gap-2 shrink-0">
+        <div onclick="recenterMap()" class="flex items-center gap-2 shrink-0 cursor-pointer hover:opacity-80 transition" title="Voltar para minha localização">
             <i data-lucide="dumbbell" class="text-indigo-600 dark:text-indigo-400"></i>
             <h1 class="text-xl font-bold tracking-tight hidden md:block">Calisthenics Map</h1>
         </div>
@@ -78,6 +78,13 @@
         </div>
 
         <div class="flex items-center gap-1 md:gap-3 shrink-0">
+            <button onclick="toggleViewMode()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Alternar Visualização">
+                <i data-lucide="layout-grid" id="view-icon-grid"></i>
+                <i data-lucide="list" id="view-icon-list" class="hidden"></i>
+            </button>
+            <button onclick="toggleFiltersPanel()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Filtros">
+                <i data-lucide="filter"></i>
+            </button>
             <button id="install-btn" onclick="installApp()" class="hidden p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-900 transition flex items-center gap-2 font-bold text-sm px-3 shadow-sm" title="Instalar Aplicativo">
                 <i data-lucide="smartphone" class="w-4 h-4"></i> <span class="hidden md:inline">Instalar</span>
             </button>
@@ -117,7 +124,8 @@
         <!-- Sidebar / Catalog Section -->
         <div class="w-full md:w-1/3 h-1/2 md:h-full flex flex-col bg-gray-50 dark:bg-[#181818] border-l border-gray-200 dark:border-gray-800 z-10">
             <!-- Filters -->
-            <div class="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-darkcard shrink-0 overflow-y-auto max-h-48 custom-scrollbar">
+            <div id="filters-panel" class="hidden p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-darkcard shrink-0 overflow-y-auto max-h-48 custom-scrollbar relative">
+                <button onclick="toggleFiltersPanel()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i data-lucide="x" class="w-4 h-4"></i></button>
                 <h2 class="text-sm font-semibold mb-2 uppercase tracking-wider text-gray-500 dark:text-gray-400">Filtros</h2>
                 
                 <div class="flex flex-col gap-2">
@@ -171,14 +179,16 @@
             </div>
 
             <!-- List -->
-            <div id="catalog-list" class="flex-1 overflow-y-auto p-4 space-y-4">
+            <div id="catalog-list" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4">
                 <!-- Cards rendered by JS -->
                 <div class="text-center text-gray-500 mt-10">Carregando locais...</div>
             </div>
 
             <!-- Credits Footer -->
-            <div class="p-3 text-center text-xs text-gray-500 border-t border-gray-200 dark:border-gray-800 shrink-0 bg-white dark:bg-darkcard">
-                Feito por <a href="https://instagram.com/4l3m4oO" target="_blank" class="text-indigo-500 font-bold hover:underline">4l3m4oO</a>
+            <div class="p-3 text-center text-xs text-gray-500 border-t border-gray-200 dark:border-gray-800 shrink-0 bg-white dark:bg-darkcard flex justify-center items-center gap-2">
+                <span>Feito por <a href="https://instagram.com/4l3m4oO" target="_blank" class="text-indigo-500 font-bold hover:underline">4l3m4oO</a></span>
+                <span class="text-gray-300 dark:text-gray-700">|</span>
+                <button onclick="openModal('aboutModal')" class="text-indigo-500 font-bold hover:underline">Sobre</button>
             </div>
         </div>
     </main>
@@ -260,8 +270,11 @@
     <div id="detailsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
         <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
             <div class="relative h-48 bg-gray-200 dark:bg-gray-800 shrink-0 overflow-hidden">
-                <div id="det-img-container" class="w-full h-full flex overflow-x-auto snap-x snap-mandatory hide-scrollbar">
+                <div id="det-img-container" onscroll="updateCarouselIndicator(event)" class="w-full h-full flex overflow-x-auto snap-x snap-mandatory hide-scrollbar">
                     <!-- Imagens injetadas via JS -->
+                </div>
+                <div id="det-img-counter" class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-full pointer-events-none hidden z-10 font-bold shadow-sm">
+                    1 / 1
                 </div>
                 <div id="det-no-img" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 pointer-events-none">
                     <i data-lucide="image-off" class="w-12 h-12 mb-2"></i>
@@ -346,6 +359,43 @@
                 <button onclick="deleteLocation()" class="w-full mt-2 bg-red-100 dark:bg-red-900/20 text-red-600 hover:bg-red-200 dark:hover:bg-red-900/40 font-bold py-2 rounded-lg transition text-sm">
                     Remover Local
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
+                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="info" class="w-5 h-5 text-indigo-500"></i> Sobre o App</h3>
+                <button onclick="closeModal('aboutModal')" class="text-gray-500 hover:text-gray-800 dark:hover:text-white"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-4 text-sm text-gray-700 dark:text-gray-300">
+                <img src="https://images.unsplash.com/photo-1599058917200-318a44c4244a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Treino de Calistenia" class="w-full h-32 object-cover rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                
+                <p>Este aplicativo foi criado para facilitar a vida de quem treina, permitindo salvar, gerenciar e compartilhar seus locais favoritos de prática de exercícios físicos ao ar livre.</p>
+                
+                <a href="https://www.youtube.com/results?search_query=como+usar+google+takeout+maps" target="_blank" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold hover:underline bg-indigo-50 dark:bg-indigo-900/20 p-2 rounded border border-indigo-100 dark:border-indigo-900/30">
+                    <i data-lucide="external-link" class="w-4 h-4 shrink-0"></i> Tutorial: Como exportar do Google Maps (Takeout)
+                </a>
+
+                <hr class="border-gray-200 dark:border-gray-700 my-2">
+
+                <h4 class="font-bold text-base text-gray-900 dark:text-white">O que é Calistenia?</h4>
+                <p>A calistenia é um sistema de treinamento físico que utiliza o peso do próprio corpo para exercícios de força e acrobáticos. É excelente para melhorar a resistência, mobilidade, flexibilidade e coordenação motora de forma natural.</p>
+                
+                <a href="https://www.youtube.com/results?search_query=o+que+%C3%A9+calistenia+e+seus+beneficios" target="_blank" class="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold hover:underline bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-100 dark:border-red-900/30">
+                    <i data-lucide="youtube" class="w-4 h-4 shrink-0"></i> Vídeo: Benefícios e História da Calistenia
+                </a>
+
+                <hr class="border-gray-200 dark:border-gray-700 my-2">
+
+                <h4 class="font-bold text-base text-gray-900 dark:text-white">Aplicativos Sugeridos para Treino</h4>
+                <ul class="space-y-2">
+                    <li class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-blue-500"></div><a href="https://calisteniapp.com/" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold">Calisteniapp</a> - Rotinas e treinos estruturados.</li>
+                    <li class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-green-500"></div><a href="https://calistree.com/" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold">Calistree</a> - Árvore de evolução e habilidades.</li>
+                    <li class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-orange-500"></div><a href="https://thenics.de/" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold">Thenics</a> - Focado em conquistar skills específicas.</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -456,6 +506,7 @@
         let searchTerm = '';
         let filterFavOnly = false;
         let currentRouteLayer = null;
+        let viewMode = 'list'; // 'list' or 'grid'
         const MAP_URLS = {
             light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
             dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
@@ -547,6 +598,32 @@
                 document.getElementById('theme-icon-dark').classList.add('hidden');
                 document.getElementById('theme-icon-light').classList.remove('hidden');
             }
+        }
+
+        function toggleFiltersPanel() {
+            const panel = document.getElementById('filters-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        function toggleViewMode() {
+            viewMode = viewMode === 'list' ? 'grid' : 'list';
+            document.getElementById('view-icon-grid').classList.toggle('hidden', viewMode === 'grid');
+            document.getElementById('view-icon-list').classList.toggle('hidden', viewMode === 'list');
+            renderCatalog();
+        }
+
+        function recenterMap() {
+            if (userLocation && map) {
+                map.flyTo([userLocation.lat, userLocation.lng], 14, { duration: 0.5 });
+            }
+        }
+
+        function updateCarouselIndicator(e) {
+            const el = e.target;
+            const total = el.children.length;
+            if(total <= 1) return;
+            const idx = Math.round(el.scrollLeft / el.clientWidth);
+            document.getElementById('det-img-counter').innerText = `${idx + 1} / ${total}`;
         }
 
         function toggleTheme() {
@@ -1099,11 +1176,15 @@
                 return;
             }
 
+            container.className = viewMode === 'list' ? 'flex-1 overflow-y-auto p-4 flex flex-col space-y-4' : 'flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-3 content-start';
+
             let html = '';
             filtered.forEach(loc => {
                 const distStr = userLocation ? formatDistance(loc.tempDist) : '-- km';
                 const locPhotos = loc.photos || (loc.photo ? [loc.photo] : []);
                 const hasPhoto = locPhotos.length > 0;
+                
+                const photoCountBadge = locPhotos.length > 1 ? `<div class="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 backdrop-blur-sm shadow-sm"><i data-lucide="layers" class="w-3 h-3"></i> ${locPhotos.length}</div>` : '';
                 
                 const eqs = normalizeEqs(loc.equipments);
                 const avgCond = getAverageCondition(eqs);
@@ -1122,27 +1203,48 @@
                     return name;
                 }).slice(0, 3).join(', ') + ((eqs.length > 3) ? '...' : '');
 
-                html += `
-                    <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard border-l-4 ${condData.border} border-y border-r border-y-gray-200 border-r-gray-200 dark:border-y-gray-800 dark:border-r-gray-800 rounded-xl p-3 shadow-sm hover:shadow-md transition cursor-pointer flex gap-3">
-                        <div class="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-lg shrink-0 overflow-hidden relative">
-                            ${hasPhoto ? `<img src="${locPhotos[0]}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i data-lucide="image" class="w-8 h-8"></i></div>`}
-                        </div>
-                        <div class="flex-1 min-w-0 flex flex-col justify-center">
-                            <div class="flex justify-between items-start">
-                                <div class="flex items-center min-w-0">
-                                    <h3 class="font-bold text-base truncate pr-2">${loc.name}</h3>
-                                    ${favHtml}
+                if (viewMode === 'list') {
+                    html += `
+                        <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard border-l-4 ${condData.border} border-y border-r border-y-gray-200 border-r-gray-200 dark:border-y-gray-800 dark:border-r-gray-800 rounded-xl p-3 shadow-sm hover:shadow-md transition cursor-pointer flex gap-3">
+                            <div class="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-lg shrink-0 overflow-hidden relative">
+                                ${hasPhoto ? `<img src="${locPhotos[0]}" class="w-full h-full object-cover">${photoCountBadge}` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i data-lucide="image" class="w-8 h-8"></i></div>`}
+                            </div>
+                            <div class="flex-1 min-w-0 flex flex-col justify-center">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-center min-w-0">
+                                        <h3 class="font-bold text-base truncate pr-2">${loc.name}</h3>
+                                        ${favHtml}
+                                    </div>
+                                    <div class="flex flex-col items-end gap-1 shrink-0">
+                                        <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">${distStr}</span>
+                                        <span class="text-[10px] font-bold ${priceClass}">${priceStr}</span>
+                                    </div>
                                 </div>
-                                <div class="flex flex-col items-end gap-1 shrink-0">
-                                    <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">${distStr}</span>
-                                    <span class="text-[10px] font-bold ${priceClass}">${priceStr}</span>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">${loc.desc || 'Sem descrição'}</p>
+                                <p class="text-[10px] text-gray-400 mt-1.5 truncate"><span class="font-semibold">Eq:</span> ${eqNames || 'Não informado'}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard border-t-4 ${condData.border} border-x border-b border-x-gray-200 border-b-gray-200 dark:border-x-gray-800 dark:border-b-gray-800 rounded-xl p-2 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col gap-2">
+                            <div class="w-full h-24 bg-gray-200 dark:bg-gray-800 rounded-lg shrink-0 overflow-hidden relative">
+                                ${hasPhoto ? `<img src="${locPhotos[0]}" class="w-full h-full object-cover">${photoCountBadge}` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i data-lucide="image" class="w-8 h-8"></i></div>`}
+                                <div class="absolute top-1 right-1 bg-white/90 dark:bg-black/80 backdrop-blur-sm rounded px-1.5 py-0.5 flex flex-col items-center">
+                                    <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 leading-tight">${distStr}</span>
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">${loc.desc || 'Sem descrição'}</p>
-                            <p class="text-[10px] text-gray-400 mt-1.5 truncate"><span class="font-semibold">Eq:</span> ${eqNames || 'Não informado'}</p>
+                            <div class="flex-1 min-w-0 flex flex-col">
+                                <div class="flex items-center justify-between min-w-0">
+                                    <h3 class="font-bold text-sm truncate pr-1">${loc.name}</h3>
+                                    ${favHtml}
+                                </div>
+                                <span class="text-[10px] font-bold ${priceClass} mt-0.5">${priceStr}</span>
+                                <p class="text-[10px] text-gray-400 mt-1 truncate"><span class="font-semibold">Eq:</span> ${eqNames || 'N/A'}</p>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             });
 
             container.innerHTML = html;
@@ -1397,6 +1499,7 @@
             
             const photoContainer = document.getElementById('det-img-container');
             const noImgEl = document.getElementById('det-no-img');
+            const counterEl = document.getElementById('det-img-counter');
             photoContainer.innerHTML = '';
             
             const favIcon = document.getElementById('det-fav-icon');
@@ -1415,8 +1518,15 @@
                 locPhotos.forEach(src => {
                     photoContainer.innerHTML += `<img src="${src}" class="w-full h-full object-cover shrink-0 snap-center" style="min-width: 100%;">`;
                 });
+                if(locPhotos.length > 1) {
+                    counterEl.classList.remove('hidden');
+                    counterEl.innerText = `1 / ${locPhotos.length}`;
+                } else {
+                    counterEl.classList.add('hidden');
+                }
             } else {
                 noImgEl.classList.remove('hidden');
+                counterEl.classList.add('hidden');
             }
 
             // Equipments & Conditions & Price
