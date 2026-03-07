@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4f46e5">
-    <title>Calisthenics Mapper</title>
+    <title>Calismap</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -66,19 +66,33 @@
 <body class="bg-gray-100 text-gray-900 dark:bg-darkbg dark:text-gray-100 h-screen flex flex-col transition-colors duration-300 overflow-hidden">
 
     <!-- Navbar -->
-    <header class="bg-white dark:bg-darkcard shadow-md p-3 md:p-4 flex justify-between items-center z-20 gap-2 min-h-[64px]">
+    <header class="bg-white dark:bg-darkcard shadow-md p-3 md:p-4 flex justify-between items-center z-30 gap-2 min-h-[64px] relative">
         <div id="nav-logo" onclick="recenterMap()" class="flex items-center gap-2 shrink-0 cursor-pointer hover:opacity-80 transition" title="Voltar para minha localização">
-            <i data-lucide="dumbbell" class="text-indigo-600 dark:text-indigo-400"></i>
-            <h1 class="text-xl font-bold tracking-tight hidden md:block">Calisthenics Map</h1>
+            <i data-lucide="biceps-flexed" class="text-indigo-600 dark:text-indigo-400"></i>
+            <h1 class="text-xl font-bold tracking-tight hidden md:block">Calismap</h1>
         </div>
         
         <!-- Barra de pesquisa expansível -->
-        <div id="nav-search-container" class="hidden flex-1 max-w-full relative animate-fade-in">
-            <input type="text" id="main-search-input" oninput="handleSearch(event)" placeholder="Pesquisar locais, equipamentos..." class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full pl-10 pr-10 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 dark:text-gray-200 transition shadow-inner">
-            <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
-            <button onclick="closeSearchBar()" class="absolute right-3 top-2.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition" title="Cancelar pesquisa">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
+        <div id="nav-search-container" class="hidden flex-1 max-w-full relative animate-fade-in flex-col z-50">
+            <div class="relative w-full">
+                <input type="text" id="main-search-input" onfocus="showSearchScopes()" onkeydown="handleSearchKey(event)" oninput="handleSearch(event)" placeholder="Pesquisar locais, cidades, equipamentos..." class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full pl-10 pr-10 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 dark:text-gray-200 transition shadow-inner">
+                <button id="search-icon-btn" onclick="executeSearchManual()" class="absolute left-3 top-2.5 text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition z-10" title="Buscar">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                </button>
+                <button onclick="closeSearchBar()" class="absolute right-3 top-2.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition z-10" title="Cancelar pesquisa">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <!-- Search Scopes -->
+            <div id="search-scopes" class="absolute top-full left-0 mt-2 w-full hidden gap-4 px-4 py-3 bg-white dark:bg-darkcard border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl flex-wrap justify-center animate-fade-in">
+                <span class="text-[10px] font-bold text-gray-500 uppercase shrink-0 w-full text-center">Opções de Busca</span>
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-indigo-600 dark:text-indigo-400 text-sm hover:opacity-80 transition">
+                    <input type="checkbox" id="search-local" checked onchange="performSearch()" class="w-4 h-4 accent-indigo-600 rounded"> Meus Salvos
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-emerald-600 dark:text-emerald-400 text-sm hover:opacity-80 transition">
+                    <input type="checkbox" id="search-online" onchange="performSearch()" class="w-4 h-4 accent-emerald-600 rounded"> Online (Mundo)
+                </label>
+            </div>
         </div>
 
         <!-- Botões de ação principais -->
@@ -87,8 +101,9 @@
                 <i data-lucide="search"></i>
             </button>
             <button onclick="toggleViewMode()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Alternar Visualização">
-                <i data-lucide="layout-grid" id="view-icon-grid"></i>
-                <i data-lucide="list" id="view-icon-list" class="hidden"></i>
+                <i data-lucide="list" id="view-icon-list"></i>
+                <i data-lucide="layout-grid" id="view-icon-grid" class="hidden"></i>
+                <i data-lucide="layout-list" id="view-icon-detailed" class="hidden"></i>
             </button>
             <button onclick="toggleFiltersPanel()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Filtros">
                 <i data-lucide="filter"></i>
@@ -110,7 +125,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative z-0">
         
         <!-- Toast for Map Selection -->
         <div id="map-select-toast" onclick="cancelManualSelection()" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full shadow-lg z-[100] hidden cursor-pointer font-bold text-sm flex items-center gap-2 transition">
@@ -193,10 +208,15 @@
             </div>
 
             <!-- Credits Footer -->
-            <div class="p-3 text-center text-xs text-gray-500 border-t border-gray-200 dark:border-gray-800 shrink-0 bg-white dark:bg-darkcard flex justify-center items-center gap-2">
+            <div class="p-3 text-center text-[10px] md:text-xs text-gray-500 border-t border-gray-200 dark:border-gray-800 shrink-0 bg-white dark:bg-darkcard flex flex-wrap justify-center items-center gap-2 md:gap-3 shadow-inner">
                 <span>Feito por <a href="https://instagram.com/4l3m4oO" target="_blank" class="text-indigo-500 font-bold hover:underline">4l3m4oO</a></span>
-                <span class="text-gray-300 dark:text-gray-700">|</span>
+                <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
                 <button onclick="openModal('aboutModal')" class="text-indigo-500 font-bold hover:underline">Sobre</button>
+                <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
+                <label class="flex items-center gap-1 cursor-pointer hover:text-indigo-500 transition" title="Traçar rota automaticamente ao selecionar local">
+                    <input type="checkbox" id="auto-route-cb" onchange="toggleAutoRoute()" class="accent-indigo-500 w-3 h-3">
+                    <i data-lucide="route" class="w-3 h-3"></i> Auto-Rota
+                </label>
             </div>
         </div>
     </main>
@@ -204,7 +224,7 @@
     <!-- MODALS -->
 
     <!-- Add Location Modal -->
-    <div id="addModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div id="addModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
         <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
                 <h3 id="addModalTitle" class="text-lg font-bold">Novo Local de Treino</h3>
@@ -240,7 +260,6 @@
                                     <i data-lucide="image-plus" class="w-6 h-6 text-gray-400 mb-1"></i>
                                     <p class="text-xs text-gray-500 dark:text-gray-400"><span class="font-semibold">Galeria</span> ou <span class="font-semibold">Câmera</span></p>
                                 </div>
-                                <!-- Sem o capture, o celular pergunta qual app usar -->
                                 <input id="loc-photo" type="file" accept="image/*" multiple class="hidden" onchange="previewImages(event)" />
                             </label>
                             
@@ -275,7 +294,7 @@
     </div>
 
     <!-- Details Modal -->
-    <div id="detailsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div id="detailsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
         <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
             <div class="relative h-48 bg-gray-200 dark:bg-gray-800 shrink-0 overflow-hidden">
                 <div id="det-img-container" onscroll="updateCarouselIndicator(event)" class="w-full h-full flex overflow-x-auto snap-x snap-mandatory hide-scrollbar">
@@ -298,7 +317,7 @@
                     <div class="flex-1">
                         <div class="flex items-center gap-2">
                             <h3 id="det-title" class="text-2xl font-bold">Nome</h3>
-                            <button onclick="toggleFavorite()" title="Favoritar" class="text-gray-300 hover:text-pink-500 transition outline-none">
+                            <button id="det-btn-fav" onclick="toggleFavorite()" title="Favoritar" class="text-gray-300 hover:text-pink-500 transition outline-none">
                                 <i data-lucide="heart" id="det-fav-icon" class="w-6 h-6"></i>
                             </button>
                         </div>
@@ -348,10 +367,10 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 mb-2">
-                    <button onclick="editLocationBtn()" class="w-full bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
+                    <button id="det-btn-edit" onclick="editLocationBtn()" class="w-full bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
                         <i data-lucide="edit-2" class="w-4 h-4"></i> Editar
                     </button>
-                    <button onclick="exportSingleLocation()" class="w-full bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
+                    <button id="det-btn-exp" onclick="exportSingleLocation()" class="w-full bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
                         <i data-lucide="download" class="w-4 h-4"></i> Exportar
                     </button>
                 </div>
@@ -364,7 +383,7 @@
                     <i data-lucide="navigation" class="w-5 h-5"></i>
                     Traçar Rota no Google Maps
                 </a>
-                <button onclick="deleteLocation()" class="w-full mt-2 bg-red-100 dark:bg-red-900/20 text-red-600 hover:bg-red-200 dark:hover:bg-red-900/40 font-bold py-2 rounded-lg transition text-sm">
+                <button id="det-btn-del" onclick="deleteLocation()" class="w-full mt-2 bg-red-100 dark:bg-red-900/20 text-red-600 hover:bg-red-200 dark:hover:bg-red-900/40 font-bold py-2 rounded-lg transition text-sm">
                     Remover Local
                 </button>
             </div>
@@ -372,7 +391,7 @@
     </div>
 
     <!-- About Modal -->
-    <div id="aboutModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div id="aboutModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
         <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
                 <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="info" class="w-5 h-5 text-indigo-500"></i> Sobre o App</h3>
@@ -410,7 +429,7 @@
     </div>
 
     <!-- DB Modal -->
-    <div id="dbModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div id="dbModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
         <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
                 <h3 class="text-lg font-bold">Banco de Dados</h3>
@@ -500,8 +519,9 @@
         // --- STATE ---
         let map;
         let userLocation = null;
-        let markerMap = {}; // Tracks markers by location ID
+        let markerMap = {}; 
         let locations = [];
+        let onlineLocations = [];
         let filterEquips = new Set();
         let filterConditions = new Set();
         let filterPrices = new Set();
@@ -512,10 +532,12 @@
         let tileLayer;
         let mapTheme = 'light';
         let dbCountdownInterval = null;
+        let searchTimeout = null;
         let searchTerm = '';
         let filterFavOnly = false;
         let currentRouteLayer = null;
-        let viewMode = 'list'; // 'list' or 'grid'
+        let viewMode = 'list'; // 'list', 'grid' or 'detailed'
+        let autoRouteEnabled = true;
         const MAP_URLS = {
             light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
             dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
@@ -524,6 +546,12 @@
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            
+            viewMode = localStorage.getItem('viewMode') || 'list';
+            autoRouteEnabled = localStorage.getItem('autoRouteEnabled') !== 'false';
+            document.getElementById('auto-route-cb').checked = autoRouteEnabled;
+            updateViewModeIcons();
+
             initTheme();
             initPWA();
             initMap();
@@ -531,15 +559,27 @@
             renderEquipmentFilters();
             renderConditionFilters();
             renderEquipmentForm();
+
+            // Fechar dropdown de pesquisa ao clicar fora
+            document.addEventListener('click', (e) => {
+                const searchInput = document.getElementById('main-search-input');
+                const searchScopes = document.getElementById('search-scopes');
+                const searchIconBtn = document.getElementById('search-icon-btn');
+                
+                if (searchScopes && !searchScopes.classList.contains('hidden')) {
+                    if (!searchInput.contains(e.target) && !searchScopes.contains(e.target) && (!searchIconBtn || !searchIconBtn.contains(e.target))) {
+                        hideSearchScopes();
+                    }
+                }
+            });
         });
 
         // --- PWA SETUP ---
         let deferredPrompt;
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); // Previne a exibição automática da barra no Android
+            e.preventDefault();
             deferredPrompt = e;
-            // Mostra o botão de instalação no cabeçalho
             const installBtn = document.getElementById('install-btn');
             if (installBtn) installBtn.classList.remove('hidden');
         });
@@ -557,14 +597,12 @@
         }
 
         function initPWA() {
-            // Cria um ícone SVG dinamicamente para o Manifest
             const iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M6 6.5v11"/><path d="M18 6.5v11"/><path d="M2 12h20"/><path d="M8 8v8"/><path d="M16 8v8"/></svg>';
             const iconBase64 = 'data:image/svg+xml;base64,' + btoa(iconSvg);
 
-            // 1. Gera o Manifest.json dinamicamente e injeta no cabeçalho
             const manifest = {
-                name: "Calisthenics Mapper",
-                short_name: "Calisthenics",
+                name: "Calismap",
+                short_name: "Calismap",
                 description: "Catálogo de locais para calistenia",
                 start_url: window.location.href.split('?')[0],
                 display: "standalone",
@@ -581,12 +619,10 @@
             link.href = manifestUrl;
             document.head.appendChild(link);
 
-            // 2. Registra um Service Worker (critério obrigatório para PWA)
             const swCode = `
                 self.addEventListener('install', (e) => self.skipWaiting());
                 self.addEventListener('activate', (e) => self.clients.claim());
                 self.addEventListener('fetch', (e) => {
-                    // Responde com a rede, se falhar, retorna erro sem travar
                     e.respondWith(fetch(e.request).catch(() => new Response('App Offline')));
                 });
             `;
@@ -594,9 +630,7 @@
             const swUrl = URL.createObjectURL(swBlob);
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register(swUrl)
-                    .then(() => console.log('Service Worker Registrado (PWA)'))
-                    .catch(err => console.error('Erro no Service Worker:', err));
+                navigator.serviceWorker.register(swUrl).catch(err => console.error('Erro no Service Worker:', err));
             }
         }
 
@@ -615,10 +649,25 @@
         }
 
         function toggleViewMode() {
-            viewMode = viewMode === 'list' ? 'grid' : 'list';
-            document.getElementById('view-icon-grid').classList.toggle('hidden', viewMode === 'grid');
-            document.getElementById('view-icon-list').classList.toggle('hidden', viewMode === 'list');
+            if (viewMode === 'list') viewMode = 'grid';
+            else if (viewMode === 'grid') viewMode = 'detailed';
+            else viewMode = 'list';
+            
+            localStorage.setItem('viewMode', viewMode);
+            updateViewModeIcons();
             renderCatalog();
+        }
+
+        function updateViewModeIcons() {
+            document.getElementById('view-icon-list').classList.toggle('hidden', viewMode !== 'list');
+            document.getElementById('view-icon-grid').classList.toggle('hidden', viewMode !== 'grid');
+            document.getElementById('view-icon-detailed').classList.toggle('hidden', viewMode !== 'detailed');
+        }
+
+        function toggleAutoRoute() {
+            autoRouteEnabled = document.getElementById('auto-route-cb').checked;
+            localStorage.setItem('autoRouteEnabled', autoRouteEnabled);
+            if (!autoRouteEnabled) clearRoute();
         }
 
         function recenterMap() {
@@ -652,14 +701,12 @@
         }
 
         function initMap() {
-            // Default center (Brazil approx)
             map = L.map('map').setView([-14.235, -51.925], 4);
 
             tileLayer = L.tileLayer(MAP_URLS[mapTheme], {
                 attribution: '&copy; OpenStreetMap & CartoDB'
             }).addTo(map);
 
-            // Handle manual map selection
             map.on('click', function(e) {
                 if (!isSelectingLocation) return;
                 isSelectingLocation = false;
@@ -669,17 +716,17 @@
                 openModal('addModal');
             });
 
-            // Try to get user location
+            // Some a rota ao fechar o pop-up ("X" no balão do mapa)
+            map.on('popupclose', function(e) {
+                clearRoute();
+            });
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        userLocation = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        };
+                        userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
                         map.setView([userLocation.lat, userLocation.lng], 14);
                         
-                        // User Marker
                         L.circleMarker([userLocation.lat, userLocation.lng], {
                             color: '#4f46e5',
                             fillColor: '#4f46e5',
@@ -687,18 +734,15 @@
                             radius: 8
                         }).addTo(map).bindPopup("Sua Localização").openPopup();
 
-                        renderCatalog(); // Re-render with distance sorting
+                        renderCatalog(); 
                     },
-                    (error) => {
-                        console.warn("Geolocalização negada ou falhou. Usando centro padrão.");
-                    },
+                    (error) => console.warn("Geolocalização negada/falhou."),
                     { enableHighAccuracy: true }
                 );
             }
         }
 
         // --- DATA HELPERS ---
-        // Normalizes old database string arrays into objects with conditions
         function normalizeEqs(eqs) {
             if (!eqs) return [];
             return eqs.map(eq => typeof eq === 'string' ? { id: eq, condition: 0 } : eq);
@@ -715,14 +759,9 @@
         function loadDB() {
             const data = localStorage.getItem(DB_KEY);
             if (data) {
-                try {
-                    locations = JSON.parse(data);
-                } catch (e) {
-                    locations = [];
-                }
-            } else {
-                locations = [];
-            }
+                try { locations = JSON.parse(data); } 
+                catch (e) { locations = []; }
+            } else locations = [];
             refreshMapMarkers();
             renderCatalog();
         }
@@ -745,17 +784,11 @@
             URL.revokeObjectURL(url);
         }
 
-        function exportData() {
-            exportSpecificData(locations, 'calisthenics_db');
-        }
-
-        function exportFavorites() {
-            exportSpecificData(locations.filter(l => l.isFavorite), 'calisthenics_favs');
-        }
-
+        function exportData() { exportSpecificData(locations, 'calismap_db'); }
+        function exportFavorites() { exportSpecificData(locations.filter(l => l.isFavorite), 'calismap_favs'); }
         function exportSingleLocation() {
             const loc = locations.find(l => l.id === selectedLocationId);
-            if(loc) exportSpecificData([loc], `calisthenics_loc_${loc.name.replace(/\s+/g, '_')}`);
+            if(loc) exportSpecificData([loc], `calismap_loc_${loc.name.replace(/\s+/g, '_')}`);
         }
 
         function closeDbModal() {
@@ -777,12 +810,8 @@
                         saveDB();
                         closeDbModal();
                         alert(`Dados mesclados com sucesso! ${newLocs.length} novos locais adicionados.`);
-                    } else {
-                        alert('Arquivo inválido.');
-                    }
-                } catch (err) {
-                    alert('Erro ao ler arquivo JSON.');
-                }
+                    } else alert('Arquivo inválido.');
+                } catch (err) { alert('Erro ao ler arquivo JSON.'); }
             };
             reader.readAsText(file);
             event.target.value = '';
@@ -800,12 +829,8 @@
                         saveDB();
                         closeDbModal();
                         alert('Banco de dados substituído com sucesso!');
-                    } else {
-                        alert('Arquivo inválido.');
-                    }
-                } catch (err) {
-                    alert('Erro ao ler arquivo JSON.');
-                }
+                    } else alert('Arquivo inválido.');
+                } catch (err) { alert('Erro ao ler arquivo JSON.'); }
             };
             reader.readAsText(file);
             event.target.value = '';
@@ -839,18 +864,13 @@
             if(actionType === 'clear') {
                 document.getElementById('db-confirm-title').innerText = 'Limpar Dados';
                 document.getElementById('db-confirm-msg').innerText = 'Isso apagará TODOS os locais salvos. Esta ação não pode ser desfeita.';
-                btn = btnClear;
-                textSpan = textClear;
-                btn.classList.remove('hidden');
+                btn = btnClear; textSpan = textClear; btn.classList.remove('hidden');
             } else if (actionType === 'replace') {
                 document.getElementById('db-confirm-title').innerText = 'Substituir Dados';
                 document.getElementById('db-confirm-msg').innerText = 'Isso apagará seus dados atuais e os substituirá pelo arquivo selecionado.';
-                btn = btnReplace;
-                textSpan = textReplace;
-                btn.classList.remove('hidden');
+                btn = btnReplace; textSpan = textReplace; btn.classList.remove('hidden');
             }
 
-            // Reset button state
             btn.classList.add('opacity-50', 'cursor-not-allowed');
             btn.classList.remove('hover:bg-red-700', 'hover:bg-orange-700', 'cursor-pointer');
             if(inputReplace) inputReplace.disabled = true;
@@ -871,9 +891,7 @@
                         btn.classList.add('hover:bg-orange-700', 'cursor-pointer');
                         if(inputReplace) inputReplace.disabled = false;
                     }
-                } else {
-                    textSpan.innerText = `Confirmar (${seconds}s)`;
-                }
+                } else { textSpan.innerText = `Confirmar (${seconds}s)`; }
             }, 1000);
         }
 
@@ -943,35 +961,27 @@
 
         function toggleEqForm(id) {
             const details = document.getElementById(`eq-details-${id}`);
-            if(document.getElementById(`cb-eq-${id}`).checked) {
-                details.classList.remove('hidden');
-            } else {
-                details.classList.add('hidden');
-            }
+            if(document.getElementById(`cb-eq-${id}`).checked) details.classList.remove('hidden');
+            else details.classList.add('hidden');
         }
 
         function toggleFilter(eqId) {
-            if (filterEquips.has(eqId)) filterEquips.delete(eqId);
-            else filterEquips.add(eqId);
+            if (filterEquips.has(eqId)) filterEquips.delete(eqId); else filterEquips.add(eqId);
             renderCatalog();
         }
 
         function toggleCondFilter(condId) {
-            if (filterConditions.has(condId)) filterConditions.delete(condId);
-            else filterConditions.add(condId);
+            if (filterConditions.has(condId)) filterConditions.delete(condId); else filterConditions.add(condId);
             renderCatalog();
         }
 
         function togglePriceFilter(priceId) {
-            if (filterPrices.has(priceId)) filterPrices.delete(priceId);
-            else filterPrices.add(priceId);
+            if (filterPrices.has(priceId)) filterPrices.delete(priceId); else filterPrices.add(priceId);
             renderCatalog();
         }
 
         function clearFilters() {
-            filterEquips.clear();
-            filterConditions.clear();
-            filterPrices.clear();
+            filterEquips.clear(); filterConditions.clear(); filterPrices.clear();
             document.querySelectorAll('.eq-filter-cb').forEach(cb => cb.checked = false);
             document.querySelectorAll('.cond-filter-cb').forEach(cb => cb.checked = false);
             document.querySelectorAll('.price-filter-cb').forEach(cb => cb.checked = false);
@@ -993,19 +1003,44 @@
             renderCatalog();
         }
 
-        function handleSearch(e) {
-            searchTerm = e.target.value.toLowerCase();
-            renderCatalog();
+        function showSearchScopes() {
+            const scopes = document.getElementById('search-scopes');
+            if (scopes) {
+                scopes.classList.remove('hidden');
+                scopes.classList.add('flex');
+            }
+        }
+
+        function hideSearchScopes() {
+            const scopes = document.getElementById('search-scopes');
+            if (scopes) {
+                scopes.classList.add('hidden');
+                scopes.classList.remove('flex');
+            }
+        }
+
+        function executeSearchManual() {
+            hideSearchScopes();
+            performSearch();
+            document.getElementById('main-search-input').blur(); // Tira o foco do teclado para fechar no celular
+        }
+
+        function handleSearchKey(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                executeSearchManual();
+            }
         }
 
         function openSearchBar() {
             document.getElementById('nav-actions').classList.add('hidden');
-            document.getElementById('nav-logo').classList.add('hidden', 'md:flex'); // Oculta logo no mobile para dar espaço
+            document.getElementById('nav-logo').classList.add('hidden', 'md:flex'); // Esconde no mobile para abrir espaço
             
             const searchContainer = document.getElementById('nav-search-container');
             searchContainer.classList.remove('hidden');
             searchContainer.classList.add('flex');
             
+            showSearchScopes();
             setTimeout(() => { document.getElementById('main-search-input').focus(); }, 50);
         }
 
@@ -1020,6 +1055,44 @@
             const searchInput = document.getElementById('main-search-input');
             searchInput.value = '';
             searchTerm = '';
+            performSearch();
+        }
+
+        function handleSearch(e) {
+            searchTerm = e.target.value.toLowerCase();
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => { performSearch(); }, 600); // 600ms debounce p/ online
+        }
+
+        async function performSearch() {
+            const doOnline = document.getElementById('search-online').checked;
+
+            if (doOnline && searchTerm.length >= 3) {
+                try {
+                    let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=10`;
+                    if(userLocation) url += `&lat=${userLocation.lat}&lon=${userLocation.lng}`; // Favorece resultados próximos
+                    
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    onlineLocations = data.map(item => ({
+                        id: 'online_' + item.place_id,
+                        name: item.name || item.display_name.split(',')[0],
+                        desc: item.display_name,
+                        lat: parseFloat(item.lat),
+                        lng: parseFloat(item.lon),
+                        equipments: [],
+                        photos: [],
+                        price: 0,
+                        isFavorite: false,
+                        isOnline: true
+                    }));
+                } catch(e) {
+                    console.warn("Online search falhou", e);
+                    onlineLocations = [];
+                }
+            } else {
+                onlineLocations = [];
+            }
             renderCatalog();
         }
 
@@ -1031,7 +1104,8 @@
 
         function toggleFavorite() {
             if(!selectedLocationId) return;
-            const loc = locations.find(l => l.id === selectedLocationId);
+            // Favorites is only for local DB. But if it's online, we should probably tell them to save it first.
+            let loc = locations.find(l => l.id === selectedLocationId);
             if(loc) {
                 loc.isFavorite = !loc.isFavorite;
                 saveDB();
@@ -1044,6 +1118,8 @@
                     favIcon.classList.remove('fill-pink-500', 'text-pink-500');
                     favIcon.classList.add('text-gray-300');
                 }
+            } else {
+                alert("Para favoritar este local da internet, clique em 'Salvar na minha Lista' abaixo.");
             }
         }
 
@@ -1064,16 +1140,11 @@
                         lineCap: 'round',
                         lineJoin: 'round'
                     }).addTo(map);
-                } else {
-                    throw new Error("No route found");
-                }
+                } else throw new Error("No route found");
             } catch(e) {
                 console.warn("Rota detalhada falhou, usando linha reta.", e);
                 currentRouteLayer = L.polyline([[userLocation.lat, userLocation.lng], [destLat, destLng]], {
-                    color: '#6366f1',
-                    weight: 4,
-                    opacity: 0.5,
-                    dashArray: '5, 10'
+                    color: '#6366f1', weight: 4, opacity: 0.5, dashArray: '5, 10'
                 }).addTo(map);
             }
         }
@@ -1085,30 +1156,76 @@
             }
         }
 
+        function getCombinedLocations() {
+            let combined = [];
+            const doLocal = document.getElementById('search-local') ? document.getElementById('search-local').checked : true;
+            const doOnline = document.getElementById('search-online') ? document.getElementById('search-online').checked : false;
+
+            if (doLocal) {
+                combined = locations.filter(loc => {
+                    if (filterFavOnly && !loc.isFavorite) return false;
+
+                    const eqs = normalizeEqs(loc.equipments);
+
+                    if (searchTerm) {
+                        const term = searchTerm.toLowerCase();
+                        const nameMatch = loc.name.toLowerCase().includes(term);
+                        const descMatch = (loc.desc || '').toLowerCase().includes(term);
+                        const eqMatch = eqs.some(eq => {
+                            const f = EQUIPMENTS.find(e => e.id === eq.id);
+                            return (f ? f.label.toLowerCase() : '').includes(term) || (eq.desc || '').toLowerCase().includes(term);
+                        });
+                        if (!nameMatch && !descMatch && !eqMatch) return false;
+                    }
+                    
+                    if (filterEquips.size > 0) {
+                        const locEqIds = eqs.map(e => e.id);
+                        let hasAll = true;
+                        for (let eq of filterEquips) { if (!locEqIds.includes(eq)) { hasAll = false; break; } }
+                        if(!hasAll) return false;
+                    }
+
+                    if (filterConditions.size > 0 && !filterConditions.has(getAverageCondition(eqs).toString())) return false;
+
+                    if (filterPrices.size > 0) {
+                        const isFree = (parseFloat(loc.price) || 0) === 0;
+                        if (filterPrices.has('free') && !filterPrices.has('paid') && !isFree) return false;
+                        if (filterPrices.has('paid') && !filterPrices.has('free') && isFree) return false;
+                    }
+
+                    return true;
+                });
+            }
+
+            if (doOnline && searchTerm.length >= 3) {
+                // Remove locations from online if they don't match strict equipment filters since they have no equipments
+                if (filterEquips.size === 0 && filterConditions.size === 0 && filterPrices.size === 0 && !filterFavOnly) {
+                    combined = [...combined, ...onlineLocations];
+                }
+            }
+            return combined;
+        }
+
         function refreshMapMarkers() {
             Object.values(markerMap).forEach(m => map.removeLayer(m));
             markerMap = {};
 
-            const filtered = getFilteredLocations();
+            const combined = getCombinedLocations();
 
-            filtered.forEach(loc => {
+            combined.forEach(loc => {
                 const eqs = normalizeEqs(loc.equipments);
                 const avgCond = getAverageCondition(eqs);
-                const badgeClass = CONDITIONS[avgCond].bg;
+                
+                const badgeClass = loc.isOnline ? 'bg-blue-500 border-blue-500' : CONDITIONS[avgCond].bg;
+                const mainIconBg = loc.isOnline ? 'bg-emerald-600' : 'bg-indigo-600';
+                const mainIconStr = loc.isOnline ? 'globe' : 'biceps-flexed';
 
-                // Color indicator dot based on the conservation average
-                const iconHTML = `<div class="bg-indigo-600 text-white rounded-full p-1 border-2 border-white shadow-lg flex items-center justify-center w-8 h-8 relative">
-                    <i data-lucide="dumbbell" class="w-4 h-4"></i>
-                    <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full ${badgeClass} border border-white"></div>
+                const iconHTML = `<div class="${mainIconBg} text-white rounded-full p-1 border-2 border-white shadow-lg flex items-center justify-center w-8 h-8 relative">
+                    <i data-lucide="${mainIconStr}" class="w-4 h-4"></i>
+                    ${!loc.isOnline ? `<div class="absolute -top-1 -right-1 w-3 h-3 rounded-full ${badgeClass} border border-white"></div>` : ''}
                 </div>`;
                 
-                const customIcon = L.divIcon({
-                    html: iconHTML,
-                    className: '',
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 32],
-                    popupAnchor: [0, -32]
-                });
+                const customIcon = L.divIcon({ html: iconHTML, className: '', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
 
                 const distStr = userLocation ? formatDistance(calculateDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng)) : '';
                 const locPhotos = loc.photos || (loc.photo ? [loc.photo] : []);
@@ -1120,9 +1237,12 @@
                     photoHTML = `<div class="w-full h-24 overflow-hidden rounded mt-1 border border-gray-200 dark:border-gray-700"><img src="${locPhotos[0]}" class="w-full h-full object-cover"></div>`;
                 }
 
+                const onlineTag = loc.isOnline ? `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase mt-1">Local da Internet</span>` : '';
+
                 marker.bindPopup(`
-                    <div class="text-center flex flex-col" style="width: 160px;">
-                        <h4 class="font-bold text-sm leading-tight truncate">${loc.name}</h4>
+                    <div class="text-center flex flex-col items-center" style="width: 160px;">
+                        <h4 class="font-bold text-sm leading-tight truncate w-full">${loc.name}</h4>
+                        ${onlineTag}
                         ${photoHTML}
                         ${distStr ? `<p class="text-[10px] font-bold text-indigo-500 my-1">${distStr}</p>` : '<div class="my-1"></div>'}
                         <button onclick="openDetails('${loc.id}')" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-2 py-1.5 rounded w-full font-bold hover:bg-indigo-200 transition">Ver Detalhes</button>
@@ -1133,87 +1253,28 @@
             lucide.createIcons();
         }
 
-        function getFilteredLocations() {
-            return locations.filter(loc => {
-                if (filterFavOnly && !loc.isFavorite) return false;
-
-                const eqs = normalizeEqs(loc.equipments);
-
-                if (searchTerm) {
-                    const term = searchTerm.toLowerCase();
-                    const nameMatch = loc.name.toLowerCase().includes(term);
-                    const descMatch = (loc.desc || '').toLowerCase().includes(term);
-                    
-                    const eqMatch = eqs.some(eq => {
-                        const f = EQUIPMENTS.find(e => e.id === eq.id);
-                        const label = f ? f.label.toLowerCase() : '';
-                        const eqDesc = (eq.desc || '').toLowerCase();
-                        return label.includes(term) || eqDesc.includes(term);
-                    });
-
-                    if (!nameMatch && !descMatch && !eqMatch) return false;
-                }
-                
-                if (filterEquips.size > 0) {
-                    const locEqIds = eqs.map(e => e.id);
-                    let hasAll = true;
-                    for (let eq of filterEquips) {
-                        if (!locEqIds.includes(eq)) {
-                            hasAll = false;
-                            break;
-                        }
-                    }
-                    if(!hasAll) return false;
-                }
-
-                if (filterConditions.size > 0) {
-                    const avg = getAverageCondition(eqs);
-                    if (!filterConditions.has(avg.toString())) return false;
-                }
-
-                if (filterPrices.size > 0) {
-                    const priceNum = parseFloat(loc.price) || 0;
-                    const isFree = priceNum === 0;
-                    if (filterPrices.has('free') && !filterPrices.has('paid') && !isFree) return false;
-                    if (filterPrices.has('paid') && !filterPrices.has('free') && isFree) return false;
-                }
-
-                return true;
-            });
-        }
-
         function renderCatalog() {
             const container = document.getElementById('catalog-list');
-            let filtered = getFilteredLocations();
+            let combined = getCombinedLocations();
 
-            // Calculate distance for sorting
-            if (userLocation) {
-                filtered.forEach(loc => {
-                    loc.tempDist = calculateDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng);
-                });
-            } else {
-                filtered.forEach(loc => loc.tempDist = 99999);
-            }
+            if (userLocation) combined.forEach(loc => loc.tempDist = calculateDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng));
+            else combined.forEach(loc => loc.tempDist = 99999);
 
             const sortBy = document.getElementById('sort-select').value;
-            if (sortBy === 'distance') {
-                filtered.sort((a, b) => a.tempDist - b.tempDist);
-            } else if (sortBy === 'recent') {
-                filtered.sort((a, b) => b.timestamp - a.timestamp);
-            } else if (sortBy === 'oldest') {
-                filtered.sort((a, b) => a.timestamp - b.timestamp);
-            }
+            if (sortBy === 'distance') combined.sort((a, b) => a.tempDist - b.tempDist);
+            else if (sortBy === 'recent') combined.sort((a, b) => (b.timestamp||0) - (a.timestamp||0));
+            else if (sortBy === 'oldest') combined.sort((a, b) => (a.timestamp||0) - (b.timestamp||0));
 
-            if (filtered.length === 0) {
+            if (combined.length === 0) {
                 container.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400 mt-10">Nenhum local encontrado com os filtros atuais.</div>`;
                 refreshMapMarkers();
                 return;
             }
 
-            container.className = viewMode === 'list' ? 'flex-1 overflow-y-auto p-4 flex flex-col space-y-4' : 'flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-3 content-start';
+            container.className = (viewMode === 'grid') ? 'flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-3 content-start' : 'flex-1 overflow-y-auto p-4 flex flex-col space-y-4';
 
             let html = '';
-            filtered.forEach(loc => {
+            combined.forEach(loc => {
                 const distStr = userLocation ? formatDistance(loc.tempDist) : '-- km';
                 const locPhotos = loc.photos || (loc.photo ? [loc.photo] : []);
                 const hasPhoto = locPhotos.length > 0;
@@ -1222,13 +1283,14 @@
                 
                 const eqs = normalizeEqs(loc.equipments);
                 const avgCond = getAverageCondition(eqs);
-                const condData = CONDITIONS[avgCond];
+                const condData = loc.isOnline ? null : CONDITIONS[avgCond];
 
                 const priceNum = parseFloat(loc.price) || 0;
-                const priceStr = priceNum === 0 ? 'Grátis' : `R$ ${priceNum.toFixed(2).replace('.', ',')}`;
+                const priceStr = loc.isOnline ? '' : (priceNum === 0 ? 'Grátis' : `R$ ${priceNum.toFixed(2).replace('.', ',')}`);
                 const priceClass = priceNum === 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400';
 
-                const favHtml = loc.isFavorite ? '<i data-lucide="heart" class="w-4 h-4 text-pink-500 fill-pink-500 ml-2 shrink-0"></i>' : '';
+                const favHtml = loc.isFavorite ? '<i data-lucide="heart" class="w-4 h-4 text-pink-500 fill-pink-500 shrink-0"></i>' : '';
+                const onlineTag = loc.isOnline ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800 shrink-0"><i data-lucide="globe" class="w-3 h-3 inline"></i> Online</span>` : '';
 
                 const eqNames = eqs.map(eq => {
                     const f = EQUIPMENTS.find(e => e.id === eq.id);
@@ -1239,42 +1301,73 @@
 
                 if (viewMode === 'list') {
                     html += `
-                        <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard border-l-4 ${condData.border} border-y border-r border-y-gray-200 border-r-gray-200 dark:border-y-gray-800 dark:border-r-gray-800 rounded-xl p-3 shadow-sm hover:shadow-md transition cursor-pointer flex gap-3">
+                        <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard ${loc.isOnline ? 'border-l-4 border-emerald-500' : `border-l-4 ${condData.border}`} border-y border-r border-y-gray-200 border-r-gray-200 dark:border-y-gray-800 dark:border-r-gray-800 rounded-xl p-3 shadow-sm hover:shadow-md transition cursor-pointer flex gap-3">
                             <div class="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-lg shrink-0 overflow-hidden relative">
-                                ${hasPhoto ? `<img src="${locPhotos[0]}" class="w-full h-full object-cover">${photoCountBadge}` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i data-lucide="image" class="w-8 h-8"></i></div>`}
+                                ${hasPhoto ? `<img src="${locPhotos[0]}" class="w-full h-full object-cover">${photoCountBadge}` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i data-lucide="${loc.isOnline ? 'globe' : 'image'}" class="w-8 h-8"></i></div>`}
                             </div>
                             <div class="flex-1 min-w-0 flex flex-col justify-center">
                                 <div class="flex justify-between items-start">
-                                    <div class="flex items-center min-w-0">
+                                    <div class="flex items-center gap-1.5 min-w-0">
                                         <h3 class="font-bold text-base truncate pr-2">${loc.name}</h3>
                                         ${favHtml}
                                     </div>
                                     <div class="flex flex-col items-end gap-1 shrink-0">
                                         <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">${distStr}</span>
-                                        <span class="text-[10px] font-bold ${priceClass}">${priceStr}</span>
+                                        ${loc.isOnline ? '' : `<span class="text-[10px] font-bold ${priceClass}">${priceStr}</span>`}
                                     </div>
                                 </div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">${loc.desc || 'Sem descrição'}</p>
-                                <p class="text-[10px] text-gray-400 mt-1.5 truncate"><span class="font-semibold">Eq:</span> ${eqNames || 'Não informado'}</p>
+                                <div class="flex items-center gap-2 mt-1.5 overflow-hidden">
+                                    ${onlineTag}
+                                    ${!loc.isOnline ? `<p class="text-[10px] text-gray-400 truncate"><span class="font-semibold">Eq:</span> ${eqNames || 'Não informado'}</p>` : ''}
+                                </div>
                             </div>
                         </div>
                     `;
-                } else {
+                } else if (viewMode === 'grid') {
                     html += `
-                        <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard border-t-4 ${condData.border} border-x border-b border-x-gray-200 border-b-gray-200 dark:border-x-gray-800 dark:border-b-gray-800 rounded-xl p-2 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col gap-2">
+                        <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard ${loc.isOnline ? 'border-t-4 border-emerald-500' : `border-t-4 ${condData.border}`} border-x border-b border-x-gray-200 border-b-gray-200 dark:border-x-gray-800 dark:border-b-gray-800 rounded-xl p-2 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col gap-2 relative">
+                            <div class="absolute top-3 left-3 z-10">${favHtml}</div>
                             <div class="w-full h-24 bg-gray-200 dark:bg-gray-800 rounded-lg shrink-0 overflow-hidden relative">
-                                ${hasPhoto ? `<img src="${locPhotos[0]}" class="w-full h-full object-cover">${photoCountBadge}` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i data-lucide="image" class="w-8 h-8"></i></div>`}
+                                ${hasPhoto ? `<img src="${locPhotos[0]}" class="w-full h-full object-cover">${photoCountBadge}` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i data-lucide="${loc.isOnline ? 'globe' : 'image'}" class="w-8 h-8"></i></div>`}
                                 <div class="absolute top-1 right-1 bg-white/90 dark:bg-black/80 backdrop-blur-sm rounded px-1.5 py-0.5 flex flex-col items-center">
                                     <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 leading-tight">${distStr}</span>
                                 </div>
                             </div>
                             <div class="flex-1 min-w-0 flex flex-col">
-                                <div class="flex items-center justify-between min-w-0">
-                                    <h3 class="font-bold text-sm truncate pr-1">${loc.name}</h3>
-                                    ${favHtml}
+                                <h3 class="font-bold text-sm truncate pr-1">${loc.name}</h3>
+                                ${loc.isOnline ? onlineTag : `<span class="text-[10px] font-bold ${priceClass} mt-0.5">${priceStr}</span><p class="text-[10px] text-gray-400 mt-1 truncate"><span class="font-semibold">Eq:</span> ${eqNames || 'N/A'}</p>`}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Detailed mode
+                    html += `
+                        <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard border ${loc.isOnline ? 'border-emerald-500/50' : 'border-gray-200 dark:border-gray-800'} rounded-xl shadow-md hover:shadow-lg transition cursor-pointer flex flex-col overflow-hidden">
+                            <div class="w-full h-40 bg-gray-200 dark:bg-gray-800 relative">
+                                ${hasPhoto ? `<img src="${locPhotos[0]}" class="w-full h-full object-cover">${photoCountBadge}` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i data-lucide="${loc.isOnline ? 'globe' : 'image'}" class="w-12 h-12"></i></div>`}
+                                <div class="absolute top-2 right-2 bg-white/90 dark:bg-black/80 backdrop-blur-sm rounded px-2 py-1 flex items-center gap-1 shadow">
+                                    <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">${distStr}</span>
                                 </div>
-                                <span class="text-[10px] font-bold ${priceClass} mt-0.5">${priceStr}</span>
-                                <p class="text-[10px] text-gray-400 mt-1 truncate"><span class="font-semibold">Eq:</span> ${eqNames || 'N/A'}</p>
+                            </div>
+                            <div class="p-4 flex flex-col">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-bold text-lg pr-2">${loc.name}</h3>
+                                        ${favHtml}
+                                    </div>
+                                    ${!loc.isOnline ? `<span class="text-xs font-bold ${priceClass} mt-1">${priceStr}</span>` : ''}
+                                </div>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">${loc.desc || 'Sem descrição detalhada.'}</p>
+                                <div class="mt-3 flex flex-wrap gap-1.5 items-center">
+                                    ${onlineTag}
+                                    ${!loc.isOnline ? eqs.map(eq => {
+                                        const f = EQUIPMENTS.find(e => e.id === eq.id);
+                                        const name = f ? f.label : eq.id;
+                                        const badge = CONDITIONS[eq.condition||0].badge;
+                                        return `<span class="text-[10px] px-2 py-0.5 rounded-full ${badge}">${name}</span>`;
+                                    }).join('') : ''}
+                                </div>
                             </div>
                         </div>
                     `;
@@ -1283,26 +1376,21 @@
 
             container.innerHTML = html;
             lucide.createIcons();
-            refreshMapMarkers(); // Update map to reflect filters
+            refreshMapMarkers();
         }
 
         // --- MATH & UTILS ---
-        // Haversine formula
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; // km
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             return R * c;
         }
 
         function formatDistance(distKm) {
-            if (distKm < 1) {
-                return Math.round(distKm * 1000) + ' m';
-            }
+            if (distKm < 1) return Math.round(distKm * 1000) + ' m';
             return distKm.toFixed(1) + ' km';
         }
 
@@ -1349,7 +1437,7 @@
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
             document.getElementById(id).classList.add('flex');
-            if(id === 'addModal' && !userLocation) {
+            if(id === 'addModal' && !userLocation && !tempLocation) {
                 alert("Usando o centro do mapa como localização, pois o GPS não está disponível.");
             }
         }
@@ -1361,11 +1449,7 @@
                 document.getElementById('add-form').reset();
                 currentPhotosBase64 = [];
                 renderPhotoPreviews();
-                // re-hide equipment sub-forms
                 document.querySelectorAll('[id^="eq-details-"]').forEach(el => el.classList.add('hidden'));
-            }
-            if(id === 'detailsModal') {
-                clearRoute();
             }
         }
 
@@ -1389,24 +1473,12 @@
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        const maxW = 800;
-                        const maxH = 800;
-                        let width = img.width;
-                        let height = img.height;
+                        const maxW = 800; const maxH = 800;
+                        let width = img.width; let height = img.height;
 
-                        if (width > height) {
-                            if (width > maxW) {
-                                height *= maxW / width;
-                                width = maxW;
-                            }
-                        } else {
-                            if (height > maxH) {
-                                width *= maxH / height;
-                                height = maxH;
-                            }
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
+                        if (width > height) { if (width > maxW) { height *= maxW / width; width = maxW; } } 
+                        else { if (height > maxH) { width *= maxH / height; height = maxH; } }
+                        canvas.width = width; canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
                         
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
@@ -1417,15 +1489,13 @@
                 }
                 reader.readAsDataURL(file);
             });
-            event.target.value = ''; // Limpa o input para poder adicionar a mesma foto dnv se quiser
+            event.target.value = '';
         }
 
         function renderPhotoPreviews() {
             const container = document.getElementById('photo-preview-container');
             if (currentPhotosBase64.length === 0) {
-                container.innerHTML = '';
-                container.classList.add('hidden');
-                return;
+                container.innerHTML = ''; container.classList.add('hidden'); return;
             }
             container.classList.remove('hidden');
             let html = '';
@@ -1461,16 +1531,14 @@
                 if(cb && cb.checked) {
                     const cond = document.getElementById(`eq-cond-${eq.id}`).value;
                     const item = { id: eq.id, condition: parseInt(cond) };
-                    if(eq.id === 'outros') {
-                        item.desc = document.getElementById(`eq-desc-${eq.id}`).value;
-                    }
+                    if(eq.id === 'outros') item.desc = document.getElementById(`eq-desc-${eq.id}`).value;
                     selectedEqs.push(item);
                 }
             });
 
             const editId = document.getElementById('add-form').dataset.editId;
             
-            if (editId) {
+            if (editId && editId.startsWith('loc_')) {
                 const idx = locations.findIndex(l => l.id === editId);
                 if (idx !== -1) {
                     locations[idx].name = name;
@@ -1485,31 +1553,18 @@
                 }
             } else {
                 let lat, lng;
-                if (tempLocation) {
-                    lat = tempLocation.lat;
-                    lng = tempLocation.lng;
-                } else if (userLocation) {
-                    lat = userLocation.lat;
-                    lng = userLocation.lng;
-                } else {
-                    const center = map.getCenter();
-                    lat = center.lat;
-                    lng = center.lng;
-                }
+                if (tempLocation) { lat = tempLocation.lat; lng = tempLocation.lng; } 
+                else if (userLocation) { lat = userLocation.lat; lng = userLocation.lng; } 
+                else { const center = map.getCenter(); lat = center.lat; lng = center.lng; }
 
                 const newLoc = {
                     id: 'loc_' + Date.now(),
-                    name,
-                    desc,
-                    price,
-                    lat,
-                    lng,
+                    name, desc, price, lat, lng,
                     equipments: selectedEqs,
                     photos: [...currentPhotosBase64],
                     isFavorite: false,
                     timestamp: Date.now()
                 };
-
                 locations.push(newLoc);
             }
 
@@ -1519,14 +1574,11 @@
 
         // --- DETAILS ---
         function openDetails(id) {
-            const loc = locations.find(l => l.id === id);
+            const loc = locations.find(l => l.id === id) || onlineLocations.find(l => l.id === id);
             if (!loc) return;
             selectedLocationId = id;
 
-            // Pan the map behind the modal to select the card visually
-            if(markerMap[id]) {
-                map.setView([loc.lat, loc.lng]);
-            }
+            if(markerMap[id]) map.setView([loc.lat, loc.lng]);
 
             document.getElementById('det-title').innerText = loc.name;
             document.getElementById('det-desc').innerText = loc.desc || 'Nenhuma descrição fornecida.';
@@ -1537,7 +1589,7 @@
             photoContainer.innerHTML = '';
             
             const favIcon = document.getElementById('det-fav-icon');
-            if(loc.isFavorite) {
+            if(loc.isFavorite && !loc.isOnline) {
                 favIcon.classList.add('fill-pink-500', 'text-pink-500');
                 favIcon.classList.remove('text-gray-300');
             } else {
@@ -1549,60 +1601,76 @@
 
             if (locPhotos.length > 0) {
                 noImgEl.classList.add('hidden');
-                locPhotos.forEach(src => {
-                    photoContainer.innerHTML += `<img src="${src}" class="w-full h-full object-cover shrink-0 snap-center" style="min-width: 100%;">`;
-                });
+                locPhotos.forEach(src => { photoContainer.innerHTML += `<img src="${src}" class="w-full h-full object-cover shrink-0 snap-center" style="min-width: 100%;">`; });
                 if(locPhotos.length > 1) {
                     counterEl.classList.remove('hidden');
                     counterEl.innerText = `1 / ${locPhotos.length}`;
-                } else {
-                    counterEl.classList.add('hidden');
-                }
+                } else counterEl.classList.add('hidden');
             } else {
                 noImgEl.classList.remove('hidden');
                 counterEl.classList.add('hidden');
             }
 
-            // Equipments & Conditions & Price
-            const eqs = normalizeEqs(loc.equipments);
-            const avgCond = getAverageCondition(eqs);
-            const avgData = CONDITIONS[avgCond];
-
+            // UI Adaptation for Online vs Local
             const badgeCond = document.getElementById('det-cond-badge');
-            badgeCond.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase ${avgData.badge}`;
-            badgeCond.innerText = `Estado: ${avgData.label}`;
-
-            const priceNum = parseFloat(loc.price) || 0;
             const badgePrice = document.getElementById('det-price-badge');
-            if(priceNum === 0) {
-                badgePrice.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300`;
-                badgePrice.innerText = `Grátis`;
-            } else {
-                badgePrice.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300`;
-                badgePrice.innerText = `R$ ${priceNum.toFixed(2).replace('.', ',')}`;
-            }
-
             const eqContainer = document.getElementById('det-equips');
-            eqContainer.innerHTML = '';
-            if (eqs.length > 0) {
-                eqs.forEach(eq => {
-                    const f = EQUIPMENTS.find(e => e.id === eq.id);
-                    const label = f ? f.label : eq.id;
-                    const cData = CONDITIONS[eq.condition || 0];
-                    const extra = eq.desc ? `<span class="text-gray-500 dark:text-gray-400 italic text-[10px] block mt-0.5">- ${eq.desc}</span>` : '';
-                    
-                    eqContainer.innerHTML += `
-                        <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-semibold">${label}</span>
-                                ${extra}
-                            </div>
-                            <span class="text-[10px] px-1.5 py-0.5 font-bold rounded-full ${cData.badge}">${cData.label}</span>
-                        </div>
-                    `;
-                });
+            const btnEdit = document.getElementById('det-btn-edit');
+            const btnDel = document.getElementById('det-btn-del');
+            const btnExp = document.getElementById('det-btn-exp');
+
+            if (loc.isOnline) {
+                badgeCond.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200`;
+                badgeCond.innerHTML = `<i data-lucide="globe" class="w-3 h-3 inline"></i> Internet`;
+                badgePrice.classList.add('hidden');
+                
+                eqContainer.innerHTML = `<span class="text-xs text-gray-400 italic">Local encontrado na internet. Salve na sua lista para adicionar fotos e equipamentos.</span>`;
+                
+                btnEdit.innerHTML = `<i data-lucide="download-cloud" class="w-4 h-4"></i> Salvar na minha Lista`;
+                btnEdit.className = "w-full bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm";
+                
+                btnDel.classList.add('hidden');
+                btnExp.classList.add('hidden');
             } else {
-                eqContainer.innerHTML = `<span class="text-xs text-gray-400">Nenhum equipamento listado.</span>`;
+                const eqs = normalizeEqs(loc.equipments);
+                const avgCond = getAverageCondition(eqs);
+                const avgData = CONDITIONS[avgCond];
+
+                badgeCond.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase ${avgData.badge}`;
+                badgeCond.innerText = `Estado: ${avgData.label}`;
+                badgePrice.classList.remove('hidden');
+
+                const priceNum = parseFloat(loc.price) || 0;
+                if(priceNum === 0) {
+                    badgePrice.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300`;
+                    badgePrice.innerText = `Grátis`;
+                } else {
+                    badgePrice.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300`;
+                    badgePrice.innerText = `R$ ${priceNum.toFixed(2).replace('.', ',')}`;
+                }
+
+                eqContainer.innerHTML = '';
+                if (eqs.length > 0) {
+                    eqs.forEach(eq => {
+                        const f = EQUIPMENTS.find(e => e.id === eq.id);
+                        const label = f ? f.label : eq.id;
+                        const cData = CONDITIONS[eq.condition || 0];
+                        const extra = eq.desc ? `<span class="text-gray-500 dark:text-gray-400 italic text-[10px] block mt-0.5">- ${eq.desc}</span>` : '';
+                        eqContainer.innerHTML += `
+                            <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
+                                <div class="flex flex-col"><span class="text-sm font-semibold">${label}</span>${extra}</div>
+                                <span class="text-[10px] px-1.5 py-0.5 font-bold rounded-full ${cData.badge}">${cData.label}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    eqContainer.innerHTML = `<span class="text-xs text-gray-400">Nenhum equipamento listado.</span>`;
+                }
+
+                btnEdit.innerHTML = `<i data-lucide="edit-2" class="w-4 h-4"></i> Editar`;
+                btnEdit.className = "w-full bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm";
+                btnDel.classList.remove('hidden');
+                btnExp.classList.remove('hidden');
             }
 
             // Calculations
@@ -1610,11 +1678,7 @@
             if (userLocation) {
                 dist = calculateDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng);
                 document.getElementById('det-dist').innerText = formatDistance(dist);
-                
-                const wMin = dist * 12;
-                const rMin = dist * 7.5;
-                const bMin = dist * 4;
-                const cMin = dist * 1.5;
+                const wMin = dist * 12; const rMin = dist * 7.5; const bMin = dist * 4; const cMin = dist * 1.5;
 
                 document.getElementById('det-walk-time').innerText = getETAString(wMin);
                 document.getElementById('det-walk-cal').innerText = Math.round(dist * 50) + ' kcal';
@@ -1645,15 +1709,17 @@
                 document.getElementById('det-route-btn').classList.add('opacity-50', 'pointer-events-none');
             }
 
-            drawRoute(loc.lat, loc.lng);
+            if (autoRouteEnabled) drawRoute(loc.lat, loc.lng);
+            else clearRoute();
 
+            lucide.createIcons();
             openModal('detailsModal');
         }
 
         function editLocationBtn() {
             if(!selectedLocationId) return;
             closeModal('detailsModal');
-            const loc = locations.find(l => l.id === selectedLocationId);
+            const loc = locations.find(l => l.id === selectedLocationId) || onlineLocations.find(l => l.id === selectedLocationId);
             if(!loc) return;
             
             document.getElementById('loc-name').value = loc.name;
@@ -1665,24 +1731,28 @@
 
             document.querySelectorAll('.form-eq-cb').forEach(cb => { cb.checked = false; toggleEqForm(cb.value); });
             
-            const eqs = normalizeEqs(loc.equipments);
-            eqs.forEach(eq => {
-                const cb = document.getElementById(`cb-eq-${eq.id}`);
-                if(cb) {
-                    cb.checked = true;
-                    toggleEqForm(eq.id);
-                    document.getElementById(`eq-cond-${eq.id}`).value = eq.condition || 0;
-                    if(eq.id === 'outros') {
-                        document.getElementById(`eq-desc-${eq.id}`).value = eq.desc || '';
+            if (!loc.isOnline) {
+                const eqs = normalizeEqs(loc.equipments);
+                eqs.forEach(eq => {
+                    const cb = document.getElementById(`cb-eq-${eq.id}`);
+                    if(cb) {
+                        cb.checked = true;
+                        toggleEqForm(eq.id);
+                        document.getElementById(`eq-cond-${eq.id}`).value = eq.condition || 0;
+                        if(eq.id === 'outros') document.getElementById(`eq-desc-${eq.id}`).value = eq.desc || '';
                     }
-                }
-            });
-
-            document.getElementById('addModalTitle').innerText = "Editar Informações do Local";
-            document.getElementById('addModalBtnText').innerText = "Atualizar Local";
-            document.getElementById('add-form').dataset.editId = loc.id;
+                });
+                document.getElementById('addModalTitle').innerText = "Editar Informações do Local";
+                document.getElementById('addModalBtnText').innerText = "Atualizar Local";
+                document.getElementById('add-form').dataset.editId = loc.id;
+            } else {
+                // Prepara para importar da net para o BD local
+                document.getElementById('addModalTitle').innerText = "Salvar Local da Web";
+                document.getElementById('addModalBtnText').innerText = "Salvar nos Meus Locais";
+                document.getElementById('add-form').removeAttribute('data-edit-id'); 
+            }
             
-            tempLocation = null;
+            tempLocation = { lat: loc.lat, lng: loc.lng };
             document.getElementById('loc-status').innerText = 'Manter Original (Mude no botão abaixo se quiser)';
             
             openModal('addModal');
@@ -1691,13 +1761,12 @@
         function viewOnMap() {
             if(!selectedLocationId) return;
             closeModal('detailsModal');
-            const loc = locations.find(l => l.id === selectedLocationId);
+            const loc = locations.find(l => l.id === selectedLocationId) || onlineLocations.find(l => l.id === selectedLocationId);
             if(loc && markerMap[selectedLocationId]) {
-                // Fly smoothly to the marker and open its popup
                 map.flyTo([loc.lat, loc.lng], 16, { duration: 0.5 });
-                setTimeout(() => {
-                    markerMap[selectedLocationId].openPopup();
-                }, 550);
+                setTimeout(() => { markerMap[selectedLocationId].openPopup(); }, 550);
+                
+                if (!autoRouteEnabled) drawRoute(loc.lat, loc.lng);
             }
         }
 
