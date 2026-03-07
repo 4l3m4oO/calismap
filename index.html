@@ -41,14 +41,14 @@
             background-color: var(--popup-bg, #fff);
             color: var(--popup-text, #000);
             border-radius: 0.5rem;
-            overflow: hidden; /* Evita que a foto vaze pelas bordas do balão */
+            overflow: hidden; 
         }
         .leaflet-popup-content {
-            margin: 12px !important; /* Normaliza os espaçamentos */
-            max-width: 250px !important; /* Trava a largura máxima da janelinha */
+            margin: 12px !important; 
+            max-width: 250px !important; 
         }
         .leaflet-popup-content img {
-            max-width: 100%; /* Impede a imagem de estourar a largura */
+            max-width: 100%; 
         }
         .dark .leaflet-popup-content-wrapper {
             --popup-bg: #1e1e1e;
@@ -451,6 +451,20 @@
                     <input type="file" accept=".json" class="hidden" onchange="mergeData(event)">
                 </label>
 
+                <label class="w-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="map-pin" class="w-5 h-5"></i> Importar Takeout (.json)
+                    <input type="file" accept=".json" class="hidden" onchange="importTakeout(event)">
+                </label>
+
+                <button onclick="importarPorURL()" class="w-full bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
+                    <i data-lucide="link" class="w-5 h-5"></i> Importar por Link (Maps)
+                </button>
+
+                <label class="w-full bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/40 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="file-spreadsheet" class="w-5 h-5"></i> Importar CSV (Google)
+                    <input type="file" accept=".csv" class="hidden" onchange="importCSV(event)">
+                </label>
+
                 <button onclick="confirmDbAction('replace')" class="w-full bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
                     <i data-lucide="upload" class="w-5 h-5"></i> Substituir Dados (.json)
                 </button>
@@ -484,6 +498,13 @@
                         Cancelar
                     </button>
                 </div>
+            </div>
+
+            <!-- Progresso de Importação CSV -->
+            <div id="db-import-progress" class="hidden flex-col items-center justify-center p-5 border-t border-gray-200 dark:border-gray-700 shrink-0">
+                <i data-lucide="loader-2" class="w-8 h-8 text-indigo-500 animate-spin mb-2"></i>
+                <p id="import-progress-text" class="text-sm font-bold text-gray-700 dark:text-gray-300 text-center">A processar...</p>
+                <p class="text-[10px] text-gray-500 mt-1 text-center">Isto pode demorar um pouco, pois estamos a procurar as coordenadas de cada local na internet.</p>
             </div>
         </div>
     </div>
@@ -536,7 +557,7 @@
         let searchTerm = '';
         let filterFavOnly = false;
         let currentRouteLayer = null;
-        let viewMode = 'list'; // 'list', 'grid' or 'detailed'
+        let viewMode = 'list'; 
         let autoRouteEnabled = true;
         const MAP_URLS = {
             light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -567,7 +588,7 @@
                 const searchIconBtn = document.getElementById('search-icon-btn');
                 
                 if (searchScopes && !searchScopes.classList.contains('hidden')) {
-                    if (!searchInput.contains(e.target) && !searchScopes.contains(e.target) && (!searchIconBtn || !searchIconBtn.contains(e.target))) {
+                    if (e.target && !searchInput.contains(e.target) && !searchScopes.contains(e.target) && (!searchIconBtn || !searchIconBtn.contains(e.target))) {
                         hideSearchScopes();
                     }
                 }
@@ -830,8 +851,209 @@
                         saveDB();
                         closeDbModal();
                         alert('Banco de dados substituído com sucesso!');
-                    } else alert('Arquivo inválido.');
-                } catch (err) { alert('Erro ao ler arquivo JSON.'); }
+                    } else alert('Ficheiro inválido.');
+                } catch (err) { alert('Erro ao ler ficheiro JSON.'); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function importTakeout(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported && imported.type === "FeatureCollection" && Array.isArray(imported.features)) {
+                        const newLocs = [];
+                        let skipped = 0;
+                        imported.features.forEach((feat, idx) => {
+                            if (!feat.geometry || !feat.geometry.coordinates) return;
+                            const lng = feat.geometry.coordinates[0];
+                            const lat = feat.geometry.coordinates[1];
+                            if (lat === 0 && lng === 0) { skipped++; return; }
+                            const props = feat.properties || {};
+                            let name = props.Title || props.name || (props.location && props.location.name) || 'Local Salvo (Google Maps)';
+                            let descParts = [];
+                            if (props.review_text_published) descParts.push(`Nota Google: ${props.five_star_rating_published} estrelas\nComentário: ${props.review_text_published}`);
+                            if (props.location && props.location.address) descParts.push(props.location.address);
+                            if (props.google_maps_url) descParts.push(props.google_maps_url);
+                            if (props.Comment && !props.Comment.includes("Não há nenhuma informação")) descParts.push(`Nota: ${props.Comment}`);
+                            const desc = descParts.join('\n\n');
+                            const timestamp = props.date ? new Date(props.date).getTime() : Date.now();
+                            newLocs.push({
+                                id: 'loc_takeout_' + Date.now() + '_' + idx,
+                                name, desc, price: 0, lat, lng, equipments: [], photos: [], isFavorite: true, isOnline: false, timestamp
+                            });
+                        });
+                        if (newLocs.length > 0) {
+                            locations = [...locations, ...newLocs];
+                            saveDB();
+                            closeDbModal();
+                            alert(`Takeout importado! ${newLocs.length} locais adicionados.` + (skipped > 0 ? ` (${skipped} ignorados sem coordenadas)` : ''));
+                        } else alert('Nenhum local válido encontrado.');
+                    } else alert('Ficheiro inválido para Takeout (GeoJSON).');
+                } catch (err) { alert('Erro ao ler ficheiro.'); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function importarPorURL() {
+            const url = prompt("Cole o link do Google Maps aqui:\n(Atenção: Precisa ser o link longo que contém o '@' com as coordenadas. Links curtos 'goo.gl' não funcionam diretamente)");
+            if (!url) return;
+            
+            let lat = null, lng = null;
+            const matchAt = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+            const matchSearch = url.match(/search\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+            
+            if (matchAt) { lat = parseFloat(matchAt[1]); lng = parseFloat(matchAt[2]); }
+            else if (matchSearch) { lat = parseFloat(matchSearch[1]); lng = parseFloat(matchSearch[2]); }
+            
+            if (lat !== null && lng !== null) {
+                let name = "Local Importado";
+                const placeMatch = url.match(/place\/([^\/]+)/);
+                if (placeMatch) name = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+                
+                locations.push({
+                    id: 'loc_url_' + Date.now(),
+                    name: name,
+                    desc: "Importado via Link:\n" + url,
+                    price: 0,
+                    lat: lat,
+                    lng: lng,
+                    equipments: [],
+                    photos: [],
+                    isFavorite: true,
+                    isOnline: false,
+                    timestamp: Date.now()
+                });
+                saveDB();
+                closeDbModal();
+                alert("Local importado com sucesso!");
+                map.flyTo([lat, lng], 16);
+            } else {
+                alert("Não foi possível encontrar as coordenadas neste link. Certifique-se de colar o link longo do Google Maps.");
+            }
+        }
+
+        // --- CSV PARSING & IMPORT ---
+        function parseCSV(text) {
+            const rows = [];
+            let row = [];
+            let inQuotes = false;
+            let val = '';
+            for (let i = 0; i < text.length; i++) {
+                let c = text[i];
+                if (inQuotes) {
+                    if (c === '"') {
+                        if (i + 1 < text.length && text[i+1] === '"') { val += '"'; i++; } // escaped quote
+                        else { inQuotes = false; }
+                    } else { val += c; }
+                } else {
+                    if (c === '"') { inQuotes = true; }
+                    else if (c === ',') { row.push(val); val = ''; }
+                    else if (c === '\n' || c === '\r') {
+                        row.push(val); val = '';
+                        if (row.length > 1 || row[0] !== '') rows.push(row);
+                        row = [];
+                        if (c === '\r' && i + 1 < text.length && text[i+1] === '\n') i++;
+                    } else { val += c; }
+                }
+            }
+            if (val !== '' || row.length > 0) { row.push(val); rows.push(row); }
+            return rows;
+        }
+
+        async function importCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const text = e.target.result;
+                const rows = parseCSV(text);
+                if (rows.length < 2) { alert('Ficheiro CSV vazio ou inválido.'); return; }
+
+                document.getElementById('db-menu').classList.add('hidden');
+                document.getElementById('db-menu').classList.remove('flex');
+                document.getElementById('db-import-progress').classList.remove('hidden');
+                document.getElementById('db-import-progress').classList.add('flex');
+
+                const dataRows = rows.slice(1); // Remove cabeçalho
+                let importedCount = 0;
+                let failedCount = 0;
+
+                for (let i = 0; i < dataRows.length; i++) {
+                    const row = dataRows[i];
+                    const title = row[0] ? row[0].trim() : '';
+                    const nota = row[1] ? row[1].trim() : '';
+                    const url = row[2] ? row[2].trim() : '';
+                    const comentar = row[4] ? row[4].trim() : '';
+
+                    if (!url && !title) continue;
+
+                    document.getElementById('import-progress-text').innerText = `A processar ${i + 1} de ${dataRows.length}...`;
+
+                    let lat = null, lng = null;
+                    let query = title;
+                    if (query === 'Alfinete inserido' || query.includes('°')) query = nota;
+
+                    const searchMatch = url.match(/search\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+                    
+                    if (searchMatch) {
+                        lat = parseFloat(searchMatch[1]);
+                        lng = parseFloat(searchMatch[2]);
+                    } else {
+                        if (!query) { failedCount++; continue; }
+                        await new Promise(r => setTimeout(r, 1100)); // Delay para API
+                        try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+                            const data = await res.json();
+                            if (data && data.length > 0) {
+                                lat = parseFloat(data[0].lat);
+                                lng = parseFloat(data[0].lon);
+                            } else { failedCount++; continue; }
+                        } catch(err) { failedCount++; continue; }
+                    }
+
+                    if (lat !== null && lng !== null) {
+                        let descParts = [];
+                        if (nota && nota !== query) descParts.push(`Nota: ${nota}`);
+                        if (url) descParts.push(`URL Original: ${url}`);
+                        if (comentar) descParts.push(`Comentário: ${comentar}`);
+
+                        let finalTitle = title;
+                        if (finalTitle === 'Alfinete inserido' || finalTitle.includes('°')) finalTitle = nota || 'Local Salvo (Google Maps)';
+
+                        locations.push({
+                            id: 'loc_csv_' + Date.now() + '_' + i,
+                            name: finalTitle,
+                            desc: descParts.join('\n\n'),
+                            price: 0,
+                            lat: lat,
+                            lng: lng,
+                            equipments: [],
+                            photos: [],
+                            isFavorite: true,
+                            isOnline: false,
+                            timestamp: Date.now()
+                        });
+                        importedCount++;
+                    }
+                }
+
+                saveDB();
+                
+                // Reset Modal UI
+                document.getElementById('db-import-progress').classList.add('hidden');
+                document.getElementById('db-import-progress').classList.remove('flex');
+                document.getElementById('db-menu').classList.remove('hidden');
+                document.getElementById('db-menu').classList.add('flex');
+                closeDbModal();
+                
+                alert(`Importação CSV concluída!\nSucesso: ${importedCount} locais adicionados.\nFalhas (Não encontrados no mapa): ${failedCount}`);
+                lucide.createIcons();
             };
             reader.readAsText(file);
             event.target.value = '';
@@ -1023,7 +1245,7 @@
         function executeSearchManual() {
             hideSearchScopes();
             performSearch();
-            document.getElementById('main-search-input').blur(); // Tira o foco do teclado para fechar no celular
+            document.getElementById('main-search-input').blur();
         }
 
         function handleSearchKey(e) {
@@ -1035,7 +1257,7 @@
 
         function openSearchBar() {
             document.getElementById('nav-actions').classList.add('hidden');
-            document.getElementById('nav-logo').classList.add('hidden', 'md:flex'); // Esconde no mobile para abrir espaço
+            document.getElementById('nav-logo').classList.add('hidden'); 
             
             const searchContainer = document.getElementById('nav-search-container');
             searchContainer.classList.remove('hidden');
@@ -1051,7 +1273,7 @@
             searchContainer.classList.remove('flex');
             
             document.getElementById('nav-actions').classList.remove('hidden');
-            document.getElementById('nav-logo').classList.remove('hidden', 'md:flex');
+            document.getElementById('nav-logo').classList.remove('hidden');
             
             const searchInput = document.getElementById('main-search-input');
             searchInput.value = '';
@@ -1062,7 +1284,7 @@
         function handleSearch(e) {
             searchTerm = e.target.value.toLowerCase();
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => { performSearch(); }, 600); // 600ms debounce p/ online
+            searchTimeout = setTimeout(() => { performSearch(); }, 600); 
         }
 
         async function performSearch() {
@@ -1071,7 +1293,7 @@
             if (doOnline && searchTerm.length >= 3) {
                 try {
                     let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=10`;
-                    if(userLocation) url += `&lat=${userLocation.lat}&lon=${userLocation.lng}`; // Favorece resultados próximos
+                    if(userLocation) url += `&lat=${userLocation.lat}&lon=${userLocation.lng}`; 
                     
                     const res = await fetch(url);
                     const data = await res.json();
@@ -1105,7 +1327,6 @@
 
         function toggleFavorite() {
             if(!selectedLocationId) return;
-            // Favorites is only for local DB. But if it's online, we should probably tell them to save it first.
             let loc = locations.find(l => l.id === selectedLocationId);
             if(loc) {
                 loc.isFavorite = !loc.isFavorite;
@@ -1170,7 +1391,8 @@
 
                     if (searchTerm) {
                         const term = searchTerm.toLowerCase();
-                        const nameMatch = loc.name.toLowerCase().includes(term);
+                        // Previne erro se existirem locs muito antigos sem nome/desc guardada na memória
+                        const nameMatch = (loc.name || '').toLowerCase().includes(term);
                         const descMatch = (loc.desc || '').toLowerCase().includes(term);
                         const eqMatch = eqs.some(eq => {
                             const f = EQUIPMENTS.find(e => e.id === eq.id);
@@ -1199,7 +1421,6 @@
             }
 
             if (doOnline && searchTerm.length >= 3) {
-                // Remove locations from online if they don't match strict equipment filters since they have no equipments
                 if (filterEquips.size === 0 && filterConditions.size === 0 && filterPrices.size === 0 && !filterFavOnly) {
                     combined = [...combined, ...onlineLocations];
                 }
@@ -1342,7 +1563,6 @@
                         </div>
                     `;
                 } else {
-                    // Detailed mode
                     html += `
                         <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard border ${loc.isOnline ? 'border-emerald-500/50' : 'border-gray-200 dark:border-gray-800'} rounded-xl shadow-md hover:shadow-lg transition cursor-pointer flex flex-col overflow-hidden">
                             <div class="w-full h-40 bg-gray-200 dark:bg-gray-800 relative">
@@ -1382,7 +1602,7 @@
 
         // --- MATH & UTILS ---
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // km
+            const R = 6371; 
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
@@ -1632,7 +1852,7 @@
                 eqContainer.innerHTML = `<span class="text-xs text-gray-400 italic">Local encontrado na internet. Salve na sua lista para adicionar fotos e equipamentos.</span>`;
                 
                 btnEdit.innerHTML = `<i data-lucide="download-cloud" class="w-4 h-4"></i> Salvar na minha Lista`;
-                btnEdit.className = "w-full bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm";
+                btnEdit.className = "w-full bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:bg-indigo-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm";
                 
                 btnDel.classList.add('hidden');
                 btnExp.classList.add('hidden');
@@ -1751,7 +1971,6 @@
                 document.getElementById('addModalBtnText').innerText = "Atualizar Local";
                 document.getElementById('add-form').dataset.editId = loc.id;
             } else {
-                // Prepara para importar da net para o BD local
                 document.getElementById('addModalTitle').innerText = "Salvar Local da Web";
                 document.getElementById('addModalBtnText').innerText = "Salvar nos Meus Locais";
                 document.getElementById('add-form').removeAttribute('data-edit-id'); 
