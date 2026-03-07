@@ -713,7 +713,8 @@
                 document.getElementById('map-select-toast').classList.add('hidden');
                 tempLocation = { lat: e.latlng.lat, lng: e.latlng.lng };
                 document.getElementById('loc-status').innerText = 'Manual (Marcado no Mapa)';
-                openModal('addModal');
+                document.getElementById('addModal').classList.remove('hidden');
+                document.getElementById('addModal').classList.add('flex');
             });
 
             // Some a rota ao fechar o pop-up ("X" no balão do mapa)
@@ -1423,7 +1424,9 @@
         }
 
         function startManualSelection() {
-            closeModal('addModal');
+            // Apenas oculta visualmente sem resetar os dados do formulário
+            document.getElementById('addModal').classList.add('hidden');
+            document.getElementById('addModal').classList.remove('flex');
             isSelectingLocation = true;
             document.getElementById('map-select-toast').classList.remove('hidden');
         }
@@ -1431,7 +1434,9 @@
         function cancelManualSelection() {
             isSelectingLocation = false;
             document.getElementById('map-select-toast').classList.add('hidden');
-            openModal('addModal');
+            // Restaura a visualização do modal
+            document.getElementById('addModal').classList.remove('hidden');
+            document.getElementById('addModal').classList.add('flex');
         }
 
         function openModal(id) {
