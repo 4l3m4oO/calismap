@@ -137,6 +137,11 @@
         <div class="w-full md:w-2/3 h-1/2 md:h-full relative">
             <div id="map" class="w-full h-full z-0"></div>
             
+            <!-- Map Fit Bounds Button (Below standard zoom controls) -->
+            <button onclick="toggleMapFit()" class="absolute left-[10px] top-[85px] z-[400] w-[34px] h-[34px] bg-white dark:bg-darkcard text-gray-700 dark:text-gray-300 border-2 border-[rgba(0,0,0,0.2)] dark:border-gray-600 rounded shadow-sm flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer" title="Alternar visão de todos os locais">
+                <i data-lucide="expand" id="map-fit-icon" class="w-4 h-4"></i>
+            </button>
+
             <!-- Floating Add Button -->
             <button onclick="openAddModalBtn()" class="absolute bottom-4 right-4 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg z-20 transition transform hover:scale-105 flex items-center gap-2">
                 <i data-lucide="map-pin"></i>
@@ -201,8 +206,13 @@
                 </div>
             </div>
 
+            <!-- Stats Header -->
+            <div id="catalog-stats" class="px-4 pt-3 pb-1 text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider shrink-0 bg-gray-50 dark:bg-[#181818]">
+                Exibindo: 0 | Favoritos: 0
+            </div>
+
             <!-- List -->
-            <div id="catalog-list" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4">
+            <div id="catalog-list" class="flex-1 overflow-y-auto px-4 pb-4 pt-2 flex flex-col space-y-4">
                 <!-- Cards rendered by JS -->
                 <div class="text-center text-gray-500 mt-10">Carregando locais...</div>
             </div>
@@ -559,6 +569,9 @@
         let currentRouteLayer = null;
         let viewMode = 'list'; 
         let autoRouteEnabled = true;
+        let isMapFitted = false;
+        let previousMapState = null;
+
         const MAP_URLS = {
             light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
             dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
@@ -695,6 +708,31 @@
             if (userLocation && map) {
                 map.flyTo([userLocation.lat, userLocation.lng], 14, { duration: 0.5 });
             }
+        }
+
+        function toggleMapFit() {
+            if (!isMapFitted) {
+                const combined = getCombinedLocations();
+                if (combined.length === 0) return;
+                
+                // Salvar o estado original para poder voltar
+                previousMapState = { center: map.getCenter(), zoom: map.getZoom() };
+                
+                // Extrair pontos e ajustar o mapa
+                const bounds = L.latLngBounds(combined.map(loc => [loc.lat, loc.lng]));
+                map.flyToBounds(bounds, { padding: [40, 40], duration: 0.5 });
+                
+                isMapFitted = true;
+                document.getElementById('map-fit-icon').setAttribute('data-lucide', 'shrink');
+            } else {
+                // Voltar para a visão anterior
+                if (previousMapState) {
+                    map.flyTo(previousMapState.center, previousMapState.zoom, { duration: 0.5 });
+                }
+                isMapFitted = false;
+                document.getElementById('map-fit-icon').setAttribute('data-lucide', 'expand');
+            }
+            lucide.createIcons();
         }
 
         function updateCarouselIndicator(e) {
@@ -1478,6 +1516,11 @@
         function renderCatalog() {
             const container = document.getElementById('catalog-list');
             let combined = getCombinedLocations();
+            
+            // Atualizar as estatísticas (Counters)
+            const totalDisplayed = combined.length;
+            const totalFavs = combined.filter(l => l.isFavorite).length;
+            document.getElementById('catalog-stats').innerText = `Exibindo: ${totalDisplayed} | Favoritos: ${totalFavs}`;
 
             if (userLocation) combined.forEach(loc => loc.tempDist = calculateDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng));
             else combined.forEach(loc => loc.tempDist = 99999);
@@ -1493,7 +1536,7 @@
                 return;
             }
 
-            container.className = (viewMode === 'grid') ? 'flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-3 content-start' : 'flex-1 overflow-y-auto p-4 flex flex-col space-y-4';
+            container.className = (viewMode === 'grid') ? 'flex-1 overflow-y-auto px-4 pb-4 pt-2 grid grid-cols-2 gap-3 content-start' : 'flex-1 overflow-y-auto px-4 pb-4 pt-2 flex flex-col space-y-4';
 
             let html = '';
             combined.forEach(loc => {
