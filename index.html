@@ -389,10 +389,16 @@
                     <i data-lucide="map" class="w-5 h-5"></i>
                     Ver no Mapa
                 </button>
-                <a id="det-route-btn" href="#" target="_blank" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
-                    <i data-lucide="navigation" class="w-5 h-5"></i>
-                    Traçar Rota no Google Maps
-                </a>
+                <div class="grid grid-cols-2 gap-2">
+                    <a id="det-route-btn" href="#" target="_blank" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2 text-sm">
+                        <i data-lucide="map-pin" class="w-4 h-4"></i>
+                        Google Maps
+                    </a>
+                    <a id="det-route-waze-btn" href="#" target="_blank" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2 text-sm">
+                        <i data-lucide="navigation" class="w-4 h-4"></i>
+                        Waze
+                    </a>
+                </div>
                 <button id="det-btn-del" onclick="deleteLocation()" class="w-full mt-2 bg-red-100 dark:bg-red-900/20 text-red-600 hover:bg-red-200 dark:hover:bg-red-900/40 font-bold py-2 rounded-lg transition text-sm">
                     Remover Local
                 </button>
@@ -1965,7 +1971,6 @@
 
                 const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${loc.lat},${loc.lng}&travelmode=walking`;
                 document.getElementById('det-route-btn').href = gmapsUrl;
-                document.getElementById('det-route-btn').classList.remove('opacity-50', 'pointer-events-none');
             } else {
                 document.getElementById('det-dist').innerText = '? km';
                 ['walk', 'run', 'bike', 'car'].forEach(m => {
@@ -1973,9 +1978,18 @@
                     if(m !== 'car') document.getElementById(`det-${m}-cal`).innerText = '-- kcal';
                     document.getElementById(`det-${m}-arr`).innerText = 'Chegada: --';
                 });
-                document.getElementById('det-route-btn').href = "#";
-                document.getElementById('det-route-btn').classList.add('opacity-50', 'pointer-events-none');
+                
+                // Sem localização, envia apenas o destino. O celular usa o próprio GPS.
+                const gmapsFallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`;
+                document.getElementById('det-route-btn').href = gmapsFallbackUrl;
             }
+
+            // Habilita os botões de GPS independentemente de ter GPS na Web
+            document.getElementById('det-route-btn').classList.remove('opacity-50', 'pointer-events-none');
+            
+            const wazeUrl = `https://waze.com/ul?ll=${loc.lat},${loc.lng}&navigate=yes`;
+            document.getElementById('det-route-waze-btn').href = wazeUrl;
+            document.getElementById('det-route-waze-btn').classList.remove('opacity-50', 'pointer-events-none');
 
             if (autoRouteEnabled) drawRoute(loc.lat, loc.lng);
             else clearRoute();
