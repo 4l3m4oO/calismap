@@ -259,12 +259,18 @@
                     </div>
 
                     <div>
-                        <label data-i18n="priceLabel" class="block text-sm font-medium mb-1">Valor do Acesso (R$)</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-bold" id="currency-symbol">R$</span>
-                            <input type="number" id="loc-price" value="0" min="0" step="0.01" class="w-full pl-9 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <label data-i18n="priceLabel" class="block text-sm font-medium mb-1">Valor do Acesso</label>
+                        <div class="relative flex">
+                            <select id="loc-currency" class="bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-lg p-2 outline-none font-bold text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 z-10" onchange="updatePricePreview()">
+                                <option value="BRL">R$</option>
+                                <option value="USD">$</option>
+                            </select>
+                            <input type="number" id="loc-price" value="0" min="0" step="0.01" oninput="updatePricePreview()" class="w-full bg-gray-100 dark:bg-gray-800 border border-l-0 border-gray-300 dark:border-gray-700 rounded-r-lg p-2 pl-3 focus:ring-2 focus:ring-indigo-500 outline-none">
                         </div>
-                        <p class="text-[10px] text-gray-500 mt-1"><span data-i18n="priceHelp">Deixe 0 para locais</span> <span class="text-green-600 dark:text-green-400 font-bold" data-i18n="priceFree">GRÁTIS</span></p>
+                        <div class="flex justify-between items-center mt-1">
+                            <p class="text-[10px] text-gray-500"><span data-i18n="priceHelp">Deixe 0 para locais</span> <span class="text-green-600 dark:text-green-400 font-bold" data-i18n="priceFree">GRÁTIS</span></p>
+                            <span id="price-preview" class="text-[10px] font-bold text-indigo-500 hidden animate-fade-in"></span>
+                        </div>
                     </div>
 
                     <div>
@@ -291,6 +297,22 @@
                             <!-- Rendered by JS -->
                         </div>
                     </div>
+                    
+                    <div>
+                        <label data-i18n="linksLabel" class="block text-sm font-medium mb-1">Conteúdo Extra (Até 5 links)</label>
+                        <div class="flex gap-2 mb-1">
+                            <input type="url" id="new-link-url" placeholder="Ex: https://instagram.com/..." class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <button type="button" onclick="addExtraLink()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 rounded-lg transition shrink-0 flex items-center justify-center">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mb-2 leading-tight"><span data-i18n="supportedLinks">Suportados:</span> YouTube, Facebook, Instagram, X (Twitter), Google Photos.</p>
+                        
+                        <!-- Container para links adicionados -->
+                        <div id="links-preview-container" class="flex flex-col gap-1.5 empty:hidden">
+                            <!-- Preenchido pelo JS -->
+                        </div>
+                    </div>
 
                     <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col gap-2">
                         <div class="flex justify-between items-center">
@@ -302,7 +324,13 @@
                         <p data-i18n="locHelp" class="text-xs text-gray-500 dark:text-gray-400">Por padrão, usa sua localização atual ou o centro da tela se o GPS falhar.</p>
                     </div>
 
-                    <button type="submit" id="addModalBtnText" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition">Salvar Local</button>
+                    <label class="flex items-center gap-2 cursor-pointer p-3 bg-pink-50 text-pink-700 dark:bg-pink-900/10 dark:text-pink-400 rounded-lg border border-pink-100 dark:border-pink-900/30 hover:bg-pink-100 dark:hover:bg-pink-900/30 transition">
+                        <input type="checkbox" id="loc-fav" class="w-5 h-5 accent-pink-500 rounded focus:ring-pink-500 cursor-pointer">
+                        <span class="font-bold text-sm" data-i18n="markAsFav">Adicionar também aos Favoritos</span>
+                        <i data-lucide="heart" class="w-4 h-4 ml-auto"></i>
+                    </label>
+
+                    <button type="submit" id="addModalBtnText" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition mt-2">Salvar Local</button>
                 </form>
             </div>
         </div>
@@ -344,9 +372,10 @@
                     <span id="det-dist" class="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300 text-xs font-bold px-2 py-1 rounded shrink-0">-- km</span>
                 </div>
                 
-                <p id="det-desc" class="text-gray-600 dark:text-gray-300 text-sm mb-4">Descrição</p>
+                <p id="det-desc" class="text-gray-600 dark:text-gray-300 text-sm mt-1"></p>
+                <div id="det-links" class="text-sm text-gray-600 dark:text-gray-300 mb-4 mt-2 hidden"></div>
                 
-                <h4 data-i18n="detailsEq" class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Equipamentos</h4>
+                <h4 data-i18n="detailsEq" class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 mt-4">Equipamentos</h4>
                 <div id="det-equips" class="flex flex-col gap-2 mb-6"></div>
 
                 <h4 data-i18n="detailsTrip" class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Estimativa de Viagem</h4>
@@ -562,17 +591,21 @@
                 autoRouteTitle: "Traçar rota automaticamente ao selecionar local",
                 nameLabel: "Nome / Apelido do Local",
                 descLabel: "Descrição Breve",
-                priceLabel: "Valor do Acesso (R$ / $)",
+                priceLabel: "Valor do Acesso",
                 priceHelp: "Deixe 0 para locais",
                 photoLabel: "Fotos do Local (Até 3)",
                 photoHelp: "<span class='font-semibold'>Galeria</span> ou <span class='font-semibold'>Câmera</span>",
                 eqLabelForm: "Equipamentos & Conservação",
+                linksLabel: "Conteúdo Extra (Até 5 links)",
+                supportedLinks: "Suportados:",
+                markAsFav: "Adicionar também aos Favoritos",
                 locLabelForm: "Localização:",
                 chooseOnMap: "Escolher no Mapa",
                 locHelp: "Por padrão, usa sua localização atual ou o centro da tela se o GPS falhar.",
                 detNoPhoto: "Sem foto",
                 detailsEq: "Equipamentos",
                 detailsTrip: "Estimativa de Viagem",
+                extraContent: "Conteúdo extra",
                 btnEdit: "Editar",
                 btnExport: "Exportar",
                 btnViewMap: "Ver no Mapa",
@@ -624,6 +657,8 @@
                 alertCsvSuccess: "Importação CSV concluída!",
                 alertImportSuccess: "Local importado com sucesso!",
                 alertLinkFail: "Não foi possível encontrar as coordenadas neste link.",
+                alertMaxLinks: "Você só pode adicionar até 5 links.",
+                alertInvalidLink: "Link não suportado ou inválido. Use apenas YouTube, Facebook, Instagram, X ou Google Photos.",
                 alertDbCleared: "Todos os dados foram apagados.",
                 confirmDelete: "Tem certeza que deseja excluir este local?",
                 promptUrl: "Cole o link do Google Maps aqui:\n(Atenção: Precisa ser o link longo que contém o '@' com as coordenadas. Links curtos 'goo.gl' não funcionam diretamente)",
@@ -634,6 +669,7 @@
                 internetEqMsg: "Local encontrado na internet. Salve na sua lista para adicionar fotos e equipamentos.",
                 state: "Estado",
                 currency: "R$",
+                approx: "Aprox.",
                 btnConfirmClear: "Confirmar Exclusão",
                 btnConfirmReplace: "Selecionar Arquivo e Substituir",
                 btnConfirmWait: "Confirmar",
@@ -687,17 +723,21 @@
                 autoRouteTitle: "Automatically draw route when selecting a location",
                 nameLabel: "Location Name / Nickname",
                 descLabel: "Short Description",
-                priceLabel: "Access Fee (R$ / $)",
+                priceLabel: "Access Fee",
                 priceHelp: "Leave 0 for locations",
                 photoLabel: "Location Photos (Up to 3)",
                 photoHelp: "<span class='font-semibold'>Gallery</span> or <span class='font-semibold'>Camera</span>",
                 eqLabelForm: "Equipment & Condition",
+                linksLabel: "Extra Content (Up to 5 links)",
+                supportedLinks: "Supported:",
+                markAsFav: "Add to Favorites as well",
                 locLabelForm: "Location:",
                 chooseOnMap: "Choose on Map",
                 locHelp: "Defaults to your current location or map center if GPS fails.",
                 detNoPhoto: "No photo",
                 detailsEq: "Equipment",
                 detailsTrip: "Travel Estimate",
+                extraContent: "Extra content",
                 btnEdit: "Edit",
                 btnExport: "Export",
                 btnViewMap: "View on Map",
@@ -749,6 +789,8 @@
                 alertCsvSuccess: "CSV Import complete!",
                 alertImportSuccess: "Location imported successfully!",
                 alertLinkFail: "Could not find coordinates in this link.",
+                alertMaxLinks: "You can only add up to 5 links.",
+                alertInvalidLink: "Unsupported or invalid link. Use only YouTube, Facebook, Instagram, X or Google Photos.",
                 alertDbCleared: "All data cleared.",
                 confirmDelete: "Are you sure you want to delete this location?",
                 promptUrl: "Paste the Google Maps link here:\n(Note: Must be the long link containing '@' with coordinates. Short 'goo.gl' links won't work directly)",
@@ -759,6 +801,7 @@
                 internetEqMsg: "Location found online. Save to your list to add photos and equipment.",
                 state: "Condition",
                 currency: "$",
+                approx: "Approx.",
                 btnConfirmClear: "Confirm Deletion",
                 btnConfirmReplace: "Select File and Replace",
                 btnConfirmWait: "Confirm",
@@ -798,13 +841,16 @@
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
             document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.getAttribute('data-i18n-title')); });
             
-            document.getElementById('currency-symbol').innerText = t('currency');
-            
             // Re-render components with dynamic text
             renderEquipmentFilters();
             renderConditionFilters();
             renderEquipmentForm();
             renderCatalog();
+            updatePricePreview();
+            
+            if(selectedLocationId && !document.getElementById('detailsModal').classList.contains('hidden')) {
+                openDetails(selectedLocationId); // Atualiza os textos do modal de detalhes
+            }
         }
 
         function toggleLanguageCheckbox(event) {
@@ -837,6 +883,7 @@
         let filterConditions = new Set();
         let filterPrices = new Set();
         let currentPhotosBase64 = [];
+        let currentLinks = [];
         let selectedLocationId = null;
         let tempLocation = null;
         let isSelectingLocation = false;
@@ -851,6 +898,8 @@
         let autoRouteEnabled = true;
         let isMapFitted = false;
         let previousMapState = null;
+        
+        let usdToBrlRate = parseFloat(localStorage.getItem('calismap_exchange_rate')) || null;
 
         const MAP_URLS = {
             light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -878,6 +927,7 @@
             
             // Applica traduções iniciais (renderiza filtros também)
             applyTranslations();
+            fetchExchangeRate();
 
             // Fechar dropdown de pesquisa ao clicar fora
             document.addEventListener('click', (e) => {
@@ -892,6 +942,22 @@
                 }
             });
         });
+
+        async function fetchExchangeRate() {
+            try {
+                // Tenta buscar a cotação mais recente (1 USD = X BRL)
+                const res = await fetch('https://open.er-api.com/v6/latest/USD');
+                const data = await res.json();
+                if (data && data.rates && data.rates.BRL) {
+                    usdToBrlRate = data.rates.BRL;
+                    localStorage.setItem('calismap_exchange_rate', usdToBrlRate);
+                    renderCatalog(); // Recarrega os preços se a cotação atualizar
+                    updatePricePreview();
+                }
+            } catch (e) {
+                console.warn("Falha ao buscar cotação. Usando cache se disponível.");
+            }
+        }
 
         // --- PWA SETUP ---
         let deferredPrompt;
@@ -1085,6 +1151,14 @@
                             document.getElementById('addModalBtnText').innerText = t('saveBtn');
                             document.getElementById('add-form').removeAttribute('data-edit-id');
                             document.getElementById('loc-status').innerText = t('gpsCurrent');
+                            
+                            // Reseta form state
+                            currentPhotosBase64 = [];
+                            currentLinks = [];
+                            renderPhotoPreviews();
+                            renderLinkPreviews();
+                            document.getElementById('loc-fav').checked = false;
+
                             openModal('addModal');
                         });
 
@@ -1108,6 +1182,35 @@
             if (valid.length === 0) return 0;
             const sum = valid.reduce((acc, curr) => acc + parseInt(curr.condition), 0);
             return Math.round(sum / valid.length);
+        }
+
+        function formatPrice(loc) {
+            const basePrice = parseFloat(loc.price) || 0;
+            if (basePrice === 0) return t('priceFree');
+
+            const baseCurr = loc.currency || 'BRL'; // Se não tiver moeda salva, assume BRL
+            const targetCurr = currentLang === 'en' ? 'USD' : 'BRL';
+
+            // Se for a mesma moeda (BRL->BRL ou USD->USD)
+            if (baseCurr === targetCurr) {
+                return targetCurr === 'BRL' ? `R$ ${basePrice.toFixed(2).replace('.', ',')}` : `$ ${basePrice.toFixed(2)}`;
+            }
+
+            // Se não tivermos a taxa de câmbio disponível (offline), exibe o original sem conversão
+            if (!usdToBrlRate) {
+                return baseCurr === 'BRL' ? `R$ ${basePrice.toFixed(2).replace('.', ',')}` : `$ ${basePrice.toFixed(2)}`;
+            }
+
+            // Converter a moeda
+            if (targetCurr === 'BRL') {
+                // USD to BRL
+                const converted = basePrice * usdToBrlRate;
+                return `R$ ${converted.toFixed(2).replace('.', ',')}`;
+            } else {
+                // BRL to USD
+                const converted = basePrice / usdToBrlRate;
+                return `$ ${converted.toFixed(2)}`;
+            }
         }
 
         // --- DATABASE FUNCTIONS ---
@@ -1217,7 +1320,7 @@
                             const timestamp = props.date ? new Date(props.date).getTime() : Date.now();
                             newLocs.push({
                                 id: 'loc_takeout_' + Date.now() + '_' + idx,
-                                name, desc, price: 0, lat, lng, equipments: [], photos: [], isFavorite: true, isOnline: false, timestamp
+                                name, desc, price: 0, currency: 'BRL', lat, lng, equipments: [], photos: [], links: [], isFavorite: true, isOnline: false, timestamp
                             });
                         });
                         if (newLocs.length > 0) {
@@ -1254,10 +1357,12 @@
                     name: name,
                     desc: "URL:\n" + url,
                     price: 0,
+                    currency: 'BRL',
                     lat: lat,
                     lng: lng,
                     equipments: [],
                     photos: [],
+                    links: [],
                     isFavorite: true,
                     isOnline: false,
                     timestamp: Date.now()
@@ -1364,10 +1469,12 @@
                             name: finalTitle,
                             desc: descParts.join('\n\n'),
                             price: 0,
+                            currency: 'BRL',
                             lat: lat,
                             lng: lng,
                             equipments: [],
                             photos: [],
+                            links: [],
                             isFavorite: true,
                             isOnline: false,
                             timestamp: Date.now()
@@ -1456,6 +1563,47 @@
         }
 
         // --- UI & RENDER LOGIC ---
+        function updatePricePreview() {
+            const previewEl = document.getElementById('price-preview');
+            const price = parseFloat(document.getElementById('loc-price').value) || 0;
+            const curr = document.getElementById('loc-currency').value;
+
+            if (price === 0 || !usdToBrlRate) {
+                previewEl.classList.add('hidden');
+                return;
+            }
+
+            previewEl.classList.remove('hidden');
+            
+            let converted, symbol;
+            // A prioridade do idioma dita qual moeda mostramos como "preview" caso a inserida seja outra
+            const targetCurr = currentLang === 'en' ? 'USD' : 'BRL';
+
+            if (curr === targetCurr) {
+                // Se está a inserir a mesma moeda que o idioma pede, mostra o preview da OTRA moeda
+                if (curr === 'BRL') { // O utilizador está em PT, digitando BRL. Vamos mostrar em USD
+                    converted = price / usdToBrlRate;
+                    symbol = '$';
+                } else { // O utilizador está em EN, digitando USD. Vamos mostrar em BRL
+                    converted = price * usdToBrlRate;
+                    symbol = 'R$';
+                }
+            } else {
+                // Se a moeda é diferente da principal do idioma
+                if (curr === 'BRL') { // O utilizador está em EN, digitando BRL. Mostramos USD
+                    converted = price / usdToBrlRate;
+                    symbol = '$';
+                } else { // O utilizador está em PT, digitando USD. Mostramos BRL
+                    converted = price * usdToBrlRate;
+                    symbol = 'R$';
+                }
+            }
+
+            // Exibir valor com formatação vírgula para BRL, ponto para USD
+            const displayValue = symbol === 'R$' ? converted.toFixed(2).replace('.', ',') : converted.toFixed(2);
+            previewEl.innerText = `${t('approx')} ${symbol} ${displayValue}`;
+        }
+
         function renderEquipmentFilters() {
             const container = document.getElementById('filter-equipments');
             let html = '';
@@ -1634,7 +1782,9 @@
                         lng: parseFloat(item.lon),
                         equipments: [],
                         photos: [],
+                        links: [],
                         price: 0,
+                        currency: 'BRL',
                         isFavorite: false,
                         isOnline: true
                     }));
@@ -1846,7 +1996,7 @@
                 const condData = loc.isOnline ? null : CONDITIONS[avgCond];
 
                 const priceNum = parseFloat(loc.price) || 0;
-                const priceStr = loc.isOnline ? '' : (priceNum === 0 ? t('priceFree') : `${t('currency')} ${priceNum.toFixed(2).replace('.', ',')}`);
+                const priceStr = formatPrice(loc);
                 const priceClass = priceNum === 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400';
 
                 const favHtml = loc.isFavorite ? '<i data-lucide="heart" class="w-4 h-4 text-pink-500 fill-pink-500 shrink-0"></i>' : '';
@@ -1936,6 +2086,73 @@
             refreshMapMarkers();
         }
 
+        // --- LINKS FUNCTIONS ---
+        function detectPlatform(url) {
+            try {
+                const urlObj = new URL(url);
+                const host = urlObj.hostname.toLowerCase();
+                if (host.includes('youtube.com') || host.includes('youtu.be')) return 'YouTube';
+                if (host.includes('facebook.com') || host.includes('fb.com') || host.includes('fb.watch')) return 'Facebook';
+                if (host.includes('instagram.com')) return 'Instagram';
+                if (host.includes('twitter.com') || host.includes('x.com')) return 'X';
+                if (host.includes('photos.google.com') || host.includes('photos.app.goo.gl')) return 'Google Photos';
+                return null;
+            } catch(e) {
+                return null; // URL Inválida
+            }
+        }
+
+        function addExtraLink() {
+            if (currentLinks.length >= 5) {
+                alert(t('alertMaxLinks'));
+                return;
+            }
+            
+            const input = document.getElementById('new-link-url');
+            let url = input.value.trim();
+            if (!url) return;
+
+            // Adiciona protocolo se o utilizador esqueceu (para não dar erro no new URL)
+            if (!/^https?:\/\//i.test(url)) {
+                url = 'https://' + url;
+            }
+
+            const platform = detectPlatform(url);
+            if (!platform) {
+                alert(t('alertInvalidLink'));
+                return;
+            }
+
+            currentLinks.push({ url: url, platform: platform });
+            input.value = '';
+            renderLinkPreviews();
+        }
+
+        function removeLink(index) {
+            currentLinks.splice(index, 1);
+            renderLinkPreviews();
+        }
+
+        function renderLinkPreviews() {
+            const container = document.getElementById('links-preview-container');
+            container.innerHTML = '';
+            
+            currentLinks.forEach((link, idx) => {
+                container.innerHTML += `
+                    <div class="flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-2 rounded-lg text-xs shadow-sm">
+                        <div class="flex items-center gap-2 overflow-hidden flex-1">
+                            <span class="font-bold text-indigo-600 dark:text-indigo-400 shrink-0 w-24">${link.platform}</span>
+                            <span class="text-gray-500 dark:text-gray-400 truncate">${link.url}</span>
+                        </div>
+                        <button type="button" onclick="removeLink(${idx})" class="text-red-500 hover:text-red-700 bg-red-50 dark:bg-red-900/30 p-1.5 rounded ml-2 shrink-0 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
         // --- MATH & UTILS ---
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; 
@@ -1976,6 +2193,11 @@
             document.getElementById('addModalBtnText').innerText = t('saveBtn');
             document.getElementById('add-form').removeAttribute('data-edit-id');
             document.getElementById('loc-status').innerText = userLocation ? t('gpsCurrent') : t('mapCenter');
+            
+            // Define o menu select para a moeda baseada no idioma atual
+            document.getElementById('loc-currency').value = currentLang === 'en' ? 'USD' : 'BRL';
+            updatePricePreview();
+            
             openModal('addModal');
         }
 
@@ -2009,8 +2231,12 @@
             if(id === 'addModal') {
                 document.getElementById('add-form').reset();
                 currentPhotosBase64 = [];
+                currentLinks = [];
                 renderPhotoPreviews();
+                renderLinkPreviews();
+                document.getElementById('loc-fav').checked = false;
                 document.querySelectorAll('[id^="eq-details-"]').forEach(el => el.classList.add('hidden'));
+                document.getElementById('price-preview').classList.add('hidden');
             }
         }
 
@@ -2084,6 +2310,8 @@
             const name = document.getElementById('loc-name').value;
             const desc = document.getElementById('loc-desc').value;
             const price = parseFloat(document.getElementById('loc-price').value) || 0;
+            const currency = document.getElementById('loc-currency').value;
+            const isFavorite = document.getElementById('loc-fav').checked;
             
             const selectedEqs = [];
             EQUIPMENTS.forEach(eqId => {
@@ -2104,8 +2332,11 @@
                     locations[idx].name = name;
                     locations[idx].desc = desc;
                     locations[idx].price = price;
+                    locations[idx].currency = currency;
+                    locations[idx].isFavorite = isFavorite;
                     locations[idx].equipments = selectedEqs;
                     locations[idx].photos = [...currentPhotosBase64];
+                    locations[idx].links = [...currentLinks];
                     if (tempLocation) {
                         locations[idx].lat = tempLocation.lat;
                         locations[idx].lng = tempLocation.lng;
@@ -2119,10 +2350,11 @@
 
                 const newLoc = {
                     id: 'loc_' + Date.now(),
-                    name, desc, price, lat, lng,
+                    name, desc, price, currency, lat, lng,
                     equipments: selectedEqs,
                     photos: [...currentPhotosBase64],
-                    isFavorite: false,
+                    links: [...currentLinks],
+                    isFavorite: isFavorite,
                     timestamp: Date.now()
                 };
                 locations.push(newLoc);
@@ -2142,6 +2374,17 @@
 
             document.getElementById('det-title').innerText = loc.name;
             document.getElementById('det-desc').innerText = loc.desc || t('noDesc');
+            
+            // Popula os links se houver
+            const linksContainer = document.getElementById('det-links');
+            if (loc.links && loc.links.length > 0) {
+                const linksHtml = loc.links.map(l => `<a href="${l.url}" target="_blank" class="text-indigo-500 dark:text-indigo-400 hover:underline font-semibold">${l.platform}</a>`).join(', ');
+                linksContainer.innerHTML = `<strong>${t('extraContent')}:</strong> ${linksHtml}`;
+                linksContainer.classList.remove('hidden');
+            } else {
+                linksContainer.innerHTML = '';
+                linksContainer.classList.add('hidden');
+            }
             
             const photoContainer = document.getElementById('det-img-container');
             const noImgEl = document.getElementById('det-no-img');
@@ -2206,7 +2449,7 @@
                     badgePrice.innerText = t('priceFree');
                 } else {
                     badgePrice.className = `inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300`;
-                    badgePrice.innerText = `${t('currency')} ${priceNum.toFixed(2).replace('.', ',')}`;
+                    badgePrice.innerText = formatPrice(loc);
                 }
 
                 eqContainer.innerHTML = '';
@@ -2293,9 +2536,13 @@
             document.getElementById('loc-name').value = loc.name;
             document.getElementById('loc-desc').value = loc.desc || '';
             document.getElementById('loc-price').value = loc.price || 0;
+            document.getElementById('loc-currency').value = loc.currency || 'BRL'; // Carrega a moeda que estava salva
+            document.getElementById('loc-fav').checked = loc.isFavorite || false;
             
             currentPhotosBase64 = [...(loc.photos || (loc.photo ? [loc.photo] : []))];
+            currentLinks = [...(loc.links || [])];
             renderPhotoPreviews();
+            renderLinkPreviews();
 
             document.querySelectorAll('.form-eq-cb').forEach(cb => { cb.checked = false; toggleEqForm(cb.value); });
             
@@ -2322,6 +2569,7 @@
             tempLocation = { lat: loc.lat, lng: loc.lng };
             document.getElementById('loc-status').innerText = t('keepOriginal');
             
+            updatePricePreview(); // Atualiza a caixinha em tempo real ao abrir para editar
             openModal('addModal');
         }
 
