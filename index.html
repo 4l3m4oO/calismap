@@ -118,9 +118,6 @@
                 <i data-lucide="sun" id="theme-icon-light" class="hidden"></i>
                 <i data-lucide="moon" id="theme-icon-dark"></i>
             </button>
-            <button onclick="toggleLanguage()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Mudar Idioma / Change Language">
-                <i data-lucide="languages"></i>
-            </button>
             <button onclick="openModal('dbModal')" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-1" title="Banco de Dados">
                 <i data-lucide="database"></i>
             </button>
@@ -229,6 +226,11 @@
                 <label class="flex items-center gap-1 cursor-pointer hover:text-indigo-500 transition" data-i18n-title="autoRouteTitle" title="Traçar rota automaticamente ao selecionar local">
                     <input type="checkbox" id="auto-route-cb" onchange="toggleAutoRoute()" class="accent-indigo-500 w-3 h-3">
                     <i data-lucide="route" class="w-3 h-3"></i> <span data-i18n="autoRouteBtn">Auto-Rota</span>
+                </label>
+                <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
+                <label class="flex items-center gap-1 cursor-pointer hover:text-indigo-500 transition" title="Mudar Idioma / Change Language">
+                    <input type="checkbox" id="translate-en-cb" onchange="toggleLanguageCheckbox(event)" class="accent-indigo-500 w-3 h-3">
+                    Translate EN
                 </label>
             </div>
         </div>
@@ -590,7 +592,7 @@
                 dbExportFav: "Exportar Favoritos (.json)",
                 dbMerge: "Mesclar Dados (.json)",
                 dbImportTakeout: "Importar Takeout (.json)",
-                dbImportLink: "Importar por Link (Maps)",
+                dbImportLink: "Import por Link (Maps)",
                 dbImportCsv: "Importar CSV (Google)",
                 dbReplace: "Substituir Dados (.json)",
                 dbClear: "Limpar Todos os Dados",
@@ -805,8 +807,8 @@
             renderCatalog();
         }
 
-        function toggleLanguage() {
-            currentLang = currentLang === 'pt' ? 'en' : 'pt';
+        function toggleLanguageCheckbox(event) {
+            currentLang = event.target.checked ? 'en' : 'pt';
             localStorage.setItem('calismap_lang', currentLang);
             applyTranslations();
         }
@@ -860,8 +862,13 @@
             lucide.createIcons();
             
             viewMode = localStorage.getItem('viewMode') || 'list';
+            
             autoRouteEnabled = localStorage.getItem('autoRouteEnabled') !== 'false';
             document.getElementById('auto-route-cb').checked = autoRouteEnabled;
+            
+            // Inicializar estado do checkbox de idioma
+            document.getElementById('translate-en-cb').checked = (currentLang === 'en');
+            
             updateViewModeIcons();
 
             initTheme();
@@ -1065,14 +1072,24 @@
                         userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
                         map.setView([userLocation.lat, userLocation.lng], 14);
                         
-                        L.circleMarker([userLocation.lat, userLocation.lng], {
-                            color: '#4f46e5',
-                            fillColor: '#4f46e5',
-                            fillOpacity: 0.5,
+                        const gpsMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
+                            color: '#ef4444',
+                            fillColor: '#ef4444',
+                            fillOpacity: 0.6,
                             radius: 8
-                        }).addTo(map).bindPopup("GPS").openPopup();
+                        }).addTo(map);
+
+                        gpsMarker.on('click', () => {
+                            tempLocation = { lat: userLocation.lat, lng: userLocation.lng };
+                            document.getElementById('addModalTitle').innerText = t('newLocation');
+                            document.getElementById('addModalBtnText').innerText = t('saveBtn');
+                            document.getElementById('add-form').removeAttribute('data-edit-id');
+                            document.getElementById('loc-status').innerText = t('gpsCurrent');
+                            openModal('addModal');
+                        });
 
                         renderCatalog(); 
+                        refreshMapMarkers(); // Atualiza os marcadores para que os locais na mesma coordenada fiquem vermelhos
                     },
                     (error) => console.warn("Geolocalização negada/falhou."),
                     { enableHighAccuracy: true }
@@ -1751,7 +1768,11 @@
                 const avgCond = getAverageCondition(eqs);
                 
                 const badgeClass = loc.isOnline ? 'bg-blue-500 border-blue-500' : CONDITIONS[avgCond].bg;
-                const mainIconBg = loc.isOnline ? 'bg-emerald-600' : 'bg-indigo-600';
+                
+                let mainIconBg = loc.isOnline ? 'bg-emerald-600' : 'bg-indigo-600';
+                const isAtGps = userLocation && loc.lat === userLocation.lat && loc.lng === userLocation.lng;
+                if (isAtGps) mainIconBg = 'bg-red-600';
+                
                 const mainIconStr = loc.isOnline ? 'globe' : 'biceps-flexed';
 
                 const iconHTML = `<div class="${mainIconBg} text-white rounded-full p-1 border-2 border-white shadow-lg flex items-center justify-center w-8 h-8 relative">
