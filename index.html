@@ -559,6 +559,21 @@
         </div>
     </div>
 
+    <!-- Fullscreen Image Modal -->
+    <div id="fullscreenImgModal" class="fixed inset-0 bg-black/95 hidden items-center justify-center z-[200] opacity-0 transition-opacity duration-300">
+        <button onclick="closeFullScreen()" class="absolute top-4 right-4 text-white hover:text-gray-300 z-50 p-2 backdrop-blur-sm bg-black/30 rounded-full transition">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <button id="fs-prev-btn" onclick="prevFullScreen()" class="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 z-50 p-3 hidden backdrop-blur-sm bg-black/30 rounded-full transition">
+            <i data-lucide="chevron-left" class="w-8 h-8"></i>
+        </button>
+        <button id="fs-next-btn" onclick="nextFullScreen()" class="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 z-50 p-3 hidden backdrop-blur-sm bg-black/30 rounded-full transition">
+            <i data-lucide="chevron-right" class="w-8 h-8"></i>
+        </button>
+        <img id="fs-img" src="" class="max-w-full max-h-full object-contain select-none transition-transform duration-300 scale-95">
+        <div id="fs-counter" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-bold tracking-widest text-sm bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm"></div>
+    </div>
+
     <!-- Scripts -->
     <script>
         // --- INTERNATIONALIZATION (i18n) ---
@@ -884,6 +899,8 @@
         let filterPrices = new Set();
         let currentPhotosBase64 = [];
         let currentLinks = [];
+        let currentDetailPhotos = [];
+        let currentFsIndex = 0;
         let selectedLocationId = null;
         let tempLocation = null;
         let isSelectingLocation = false;
@@ -1056,6 +1073,7 @@
         }
 
         function recenterMap() {
+            clearRoute();
             if (userLocation && map) {
                 map.flyTo([userLocation.lat, userLocation.lng], 14, { duration: 0.5 });
             }
@@ -1125,11 +1143,6 @@
                 document.getElementById('loc-status').innerText = t('manualMap');
                 document.getElementById('addModal').classList.remove('hidden');
                 document.getElementById('addModal').classList.add('flex');
-            });
-
-            // Some a rota ao fechar o pop-up ("X" no balão do mapa)
-            map.on('popupclose', function(e) {
-                clearRoute();
             });
 
             if (navigator.geolocation) {
@@ -2401,10 +2414,11 @@
             }
 
             const locPhotos = loc.photos || (loc.photo ? [loc.photo] : []);
+            currentDetailPhotos = locPhotos;
 
             if (locPhotos.length > 0) {
                 noImgEl.classList.add('hidden');
-                locPhotos.forEach(src => { photoContainer.innerHTML += `<img src="${src}" class="w-full h-full object-cover shrink-0 snap-center" style="min-width: 100%;">`; });
+                locPhotos.forEach((src, idx) => { photoContainer.innerHTML += `<img src="${src}" onclick="openFullScreen(${idx})" class="w-full h-full object-cover shrink-0 snap-center cursor-pointer hover:opacity-90 transition" style="min-width: 100%;">`; });
                 if(locPhotos.length > 1) {
                     counterEl.classList.remove('hidden');
                     counterEl.innerText = `1 / ${locPhotos.length}`;
@@ -2593,6 +2607,76 @@
                 closeModal('detailsModal');
             }
         }
+
+        // --- FULLSCREEN IMAGE LOGIC ---
+        function openFullScreen(index) {
+            if (!currentDetailPhotos || currentDetailPhotos.length === 0) return;
+            currentFsIndex = index;
+            const modal = document.getElementById('fullscreenImgModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Pequeno delay para a animação de opacidade funcionar após remover o hidden
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('fs-img').classList.remove('scale-95');
+                document.getElementById('fs-img').classList.add('scale-100');
+            });
+            updateFullScreenView();
+        }
+
+        function updateFullScreenView() {
+            const img = document.getElementById('fs-img');
+            img.src = currentDetailPhotos[currentFsIndex];
+            document.getElementById('fs-counter').innerText = `${currentFsIndex + 1} / ${currentDetailPhotos.length}`;
+
+            const prevBtn = document.getElementById('fs-prev-btn');
+            const nextBtn = document.getElementById('fs-next-btn');
+
+            if (currentDetailPhotos.length > 1) {
+                prevBtn.classList.remove('hidden');
+                nextBtn.classList.remove('hidden');
+            } else {
+                prevBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+            }
+            lucide.createIcons(); // Garante que os ícones do modal sejam renderizados
+        }
+
+        function closeFullScreen() {
+            const modal = document.getElementById('fullscreenImgModal');
+            modal.classList.add('opacity-0');
+            document.getElementById('fs-img').classList.remove('scale-100');
+            document.getElementById('fs-img').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.getElementById('fs-img').src = '';
+            }, 300);
+        }
+
+        function prevFullScreen() {
+            if (currentDetailPhotos.length <= 1) return;
+            currentFsIndex = (currentFsIndex - 1 + currentDetailPhotos.length) % currentDetailPhotos.length;
+            updateFullScreenView();
+        }
+
+        function nextFullScreen() {
+            if (currentDetailPhotos.length <= 1) return;
+            currentFsIndex = (currentFsIndex + 1) % currentDetailPhotos.length;
+            updateFullScreenView();
+        }
+
+        // Adiciona atalhos de teclado para o modo tela cheia
+        document.addEventListener('keydown', (e) => {
+            const fsModal = document.getElementById('fullscreenImgModal');
+            if (fsModal && !fsModal.classList.contains('hidden')) {
+                if (e.key === 'Escape') closeFullScreen();
+                else if (e.key === 'ArrowRight') nextFullScreen();
+                else if (e.key === 'ArrowLeft') prevFullScreen();
+            }
+        });
+
     </script>
 </body>
 </html>
