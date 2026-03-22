@@ -219,7 +219,11 @@
 
             <!-- Credits Footer -->
             <div class="p-3 text-center text-[10px] md:text-xs text-gray-500 border-t border-gray-200 dark:border-gray-800 shrink-0 bg-white dark:bg-darkcard flex flex-wrap justify-center items-center gap-2 md:gap-3 shadow-inner">
-                <span><span data-i18n="madeBy">Feito por</span> <a href="https://instagram.com/4l3m4oO" target="_blank" class="text-indigo-500 font-bold hover:underline">4l3m4oO</a></span>
+                <button onclick="openModal('donateModal')" class="text-emerald-600 dark:text-emerald-500 font-bold hover:underline flex items-center gap-1 transition" title="Apoie o Projeto">
+                    <i data-lucide="hand-coins" class="w-3 h-3"></i> <span data-i18n="donateBtn">Doe</span>
+                </button>
+                <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
+                <span><span data-i18n="madeBy">Feito por</span> <a href="https://github.com/4l3m4oO/calismap" target="_blank" class="text-indigo-500 font-bold hover:underline">4l3m4oO</a></span>
                 <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
                 <button onclick="openModal('aboutModal')" class="text-indigo-500 font-bold hover:underline" data-i18n="aboutBtn">Sobre</button>
                 <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
@@ -445,7 +449,12 @@
         <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
                 <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="info" class="w-5 h-5 text-indigo-500"></i> <span data-i18n="aboutTitle">Sobre o App</span></h3>
-                <button onclick="closeModal('aboutModal')" class="text-gray-500 hover:text-gray-800 dark:hover:text-white"><i data-lucide="x"></i></button>
+                <div class="flex items-center gap-3">
+                    <button onclick="closeModal('aboutModal'); openModal('donateModal');" class="text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full text-xs font-bold hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition flex items-center gap-1 shadow-sm">
+                        <i data-lucide="hand-coins" class="w-4 h-4"></i> <span data-i18n="donateBtn">Doe</span>
+                    </button>
+                    <button onclick="closeModal('aboutModal')" class="text-gray-500 hover:text-gray-800 dark:hover:text-white"><i data-lucide="x"></i></button>
+                </div>
             </div>
             <div class="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-4 text-sm text-gray-700 dark:text-gray-300">
                 
@@ -453,17 +462,17 @@
                 
                 <p data-i18n="aboutP1">Este aplicativo foi criado para facilitar a vida de quem treina, permitindo salvar, gerenciar e compartilhar seus locais favoritos de prática de exercícios físicos ao ar livre.</p>
                 
-                <a href="https://www.youtube.com/results?search_query=como+usar+google+takeout+maps" target="_blank" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold hover:underline bg-indigo-50 dark:bg-indigo-900/20 p-2 rounded border border-indigo-100 dark:border-indigo-900/30">
-                    <i data-lucide="external-link" class="w-4 h-4 shrink-0"></i> <span data-i18n="aboutTut">Tutorial: Como exportar do Google Maps (Takeout)</span>
-                </a>
-
                 <hr class="border-gray-200 dark:border-gray-700 my-2">
 
                 <h4 data-i18n="aboutWhat" class="font-bold text-base text-gray-900 dark:text-white">O que é Calistenia?</h4>
                 <p data-i18n="aboutWhatDesc">A calistenia é um sistema de treinamento físico que utiliza o peso do próprio corpo para exercícios de força e acrobáticos. É excelente para melhorar a resistência, mobilidade, flexibilidade e coordenação motora de forma natural.</p>
                 
-                <a href="https://www.youtube.com/results?search_query=o+que+%C3%A9+calistenia+e+seus+beneficios" target="_blank" class="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold hover:underline bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-100 dark:border-red-900/30">
-                    <i data-lucide="youtube" class="w-4 h-4 shrink-0"></i> <span data-i18n="aboutVid">Vídeo: Benefícios e História da Calistenia</span>
+                <a href="https://www.youtube.com/watch?v=aMTGSm4sSZ4" target="_blank" class="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold hover:underline bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-100 dark:border-red-900/30 leading-tight">
+                    <i data-lucide="youtube" class="w-6 h-6 shrink-0"></i> <span data-i18n="aboutVid1">Calistenia, Comece por AQUI! (Calistenia Brasil)</span>
+                </a>
+                
+                <a href="https://www.youtube.com/watch?v=wXeQDMRBQe0&list=PLIt204jFgI4GZ2EGmNUJTfp0_Fd-5pBO5" target="_blank" class="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold hover:underline bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-100 dark:border-red-900/30 leading-tight">
+                    <i data-lucide="youtube" class="w-6 h-6 shrink-0"></i> <span data-i18n="aboutVid2">CALISTENIA PARA INICIANTES: ROTINA COMPLETA PARA COMEÇAR DO ZERO! (Gabriel Macineli)</span>
                 </a>
 
                 <hr class="border-gray-200 dark:border-gray-700 my-2">
@@ -474,6 +483,40 @@
                     <li class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-green-500"></div><a href="https://calistree.com/" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold">Calistree</a> - <span data-i18n="appDesc2">Árvore de evolução e habilidades.</span></li>
                     <li class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-orange-500"></div><a href="https://thenics.de/" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold">Thenics</a> - <span data-i18n="appDesc3">Focado em conquistar skills específicas.</span></li>
                 </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Donate Modal -->
+    <div id="donateModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
+        <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
+                <h3 class="text-lg font-bold flex items-center gap-2 text-emerald-600 dark:text-emerald-400"><i data-lucide="heart-handshake" class="w-5 h-5"></i> <span data-i18n="donateTitle">Apoie o Projeto</span></h3>
+                <button onclick="closeModal('donateModal')" class="text-gray-500 hover:text-gray-800 dark:hover:text-white"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-4 text-sm text-gray-700 dark:text-gray-300">
+                
+                <p data-i18n="donateText" class="leading-relaxed text-justify">O Calismap nasceu de um sonho: conectar atletas, facilitar o acesso ao esporte ao ar livre e fortalecer a comunidade da calistenia em todo o mundo. O aplicativo é 100% gratuito e sem anúncios, mas manter os servidores e as atualizações exige tempo e recursos. Se este mapa já te ajudou a encontrar um bom treino, considere pagar um "suplemento" ou um café para o desenvolvedor! Qualquer valor ajuda a manter o entusiasmo e o projeto vivo.</p>
+                
+                <!-- PayPal -->
+                <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-lg p-4 text-center mt-2 shadow-sm">
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-1 flex justify-center items-center gap-2">PayPal</h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3" data-i18n="paypalDesc">Aceita cartões de crédito e saldo. Você pode configurar uma doação mensal se quiser!</p>
+                    <a href="https://www.paypal.com/donate/?cmd=_s-xclick&hosted_button_id=77TCV3JDWEKUG&source=url&ssrt=1774158416745" target="_blank" class="inline-block w-full bg-[#00457C] hover:bg-[#003058] text-white font-bold py-2.5 rounded-lg transition shadow-sm" data-i18n="paypalBtn">Doar via PayPal</a>
+                </div>
+                
+                <!-- Pix -->
+                <div class="bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-900/30 rounded-lg p-4 text-center shadow-sm">
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-1 flex justify-center items-center gap-2">Pix (Brasil)</h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3" data-i18n="pixDesc">Copie a chave aleatória abaixo e cole no aplicativo do seu banco.</p>
+                    
+                    <div class="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition" onclick="copyPix()" title="Copiar chave Pix">
+                        <span class="truncate flex-1 font-mono text-xs select-all text-left text-gray-800 dark:text-gray-200" id="pix-key">a56a02fa-df00-42b8-a747-c5ba99f166d0</span>
+                        <i data-lucide="copy" class="w-4 h-4 text-gray-400 shrink-0"></i>
+                    </div>
+                    <p id="pix-copied-msg" class="text-[10px] text-teal-600 dark:text-teal-400 font-bold mt-2 opacity-0 transition-opacity" data-i18n="pixCopied">Chave copiada com sucesso!</p>
+                </div>
+
             </div>
         </div>
     </div>
@@ -602,6 +645,7 @@
                 loading: "Carregando locais...",
                 madeBy: "Feito por",
                 aboutBtn: "Sobre",
+                donateBtn: "Doe",
                 autoRouteBtn: "Auto-Rota",
                 autoRouteTitle: "Traçar rota automaticamente ao selecionar local",
                 nameLabel: "Nome / Apelido do Local",
@@ -627,14 +671,20 @@
                 btnRemove: "Remover Local",
                 aboutTitle: "Sobre o App",
                 aboutP1: "Este aplicativo foi criado para facilitar a vida de quem treina, permitindo salvar, gerenciar e compartilhar seus locais favoritos de prática de exercícios físicos ao ar livre.",
-                aboutTut: "Tutorial: Como exportar do Google Maps (Takeout)",
                 aboutWhat: "O que é Calistenia?",
                 aboutWhatDesc: "A calistenia é um sistema de treinamento físico que utiliza o peso do próprio corpo para exercícios de força e acrobáticos. É excelente para melhorar a resistência, mobilidade, flexibilidade e coordenação motora de forma natural.",
-                aboutVid: "Vídeo: Benefícios e História da Calistenia",
+                aboutVid1: "Calistenia, Comece por AQUI! (Calistenia Brasil)",
+                aboutVid2: "CALISTENIA PARA INICIANTES: ROTINA COMPLETA PARA COMEÇAR DO ZERO! (Gabriel Macineli)",
                 aboutApps: "Aplicativos Sugeridos para Treino",
                 appDesc1: "Rotinas e treinos estruturados.",
                 appDesc2: "Árvore de evolução e habilidades.",
                 appDesc3: "Focado em conquistar skills específicas.",
+                donateTitle: "Apoie o Projeto",
+                donateText: "O Calismap nasceu de um sonho: conectar atletas, facilitar o acesso ao esporte ao ar livre e fortalecer a comunidade da calistenia em todo o mundo. O aplicativo é 100% gratuito e sem anúncios, mas manter os servidores e as atualizações exige tempo e recursos. Se este mapa já te ajudou a encontrar um bom treino, considere pagar um \"suplemento\" ou um café para o desenvolvedor! Qualquer valor ajuda a manter o entusiasmo e o projeto vivo.",
+                paypalDesc: "Aceita cartões de crédito e saldo. Você pode configurar uma doação mensal se quiser!",
+                paypalBtn: "Doar via PayPal",
+                pixDesc: "Copie a chave aleatória abaixo e cole no aplicativo do seu banco.",
+                pixCopied: "Chave copiada com sucesso!",
                 dbTitle: "Banco de Dados",
                 dbExport: "Exportar Dados (.json)",
                 dbExportFav: "Exportar Favoritos (.json)",
@@ -734,6 +784,7 @@
                 loading: "Loading locations...",
                 madeBy: "Made by",
                 aboutBtn: "About",
+                donateBtn: "Donate",
                 autoRouteBtn: "Auto-Route",
                 autoRouteTitle: "Automatically draw route when selecting a location",
                 nameLabel: "Location Name / Nickname",
@@ -759,14 +810,20 @@
                 btnRemove: "Remove Location",
                 aboutTitle: "About the App",
                 aboutP1: "This app was created to make life easier for those who train, allowing you to save, manage, and share your favorite outdoor workout spots.",
-                aboutTut: "Tutorial: How to export from Google Maps (Takeout)",
                 aboutWhat: "What is Calisthenics?",
                 aboutWhatDesc: "Calisthenics is a physical training system that uses your own body weight for strength and acrobatic exercises. It's excellent for naturally improving endurance, mobility, flexibility, and motor coordination.",
-                aboutVid: "Video: Benefits and History of Calisthenics",
+                aboutVid1: "Calisthenics, Start HERE! (Calistenia Brasil)",
+                aboutVid2: "CALISTHENICS FOR BEGINNERS: COMPLETE ROUTINE FROM SCRATCH! (Gabriel Macineli)",
                 aboutApps: "Suggested Training Apps",
                 appDesc1: "Structured routines and workouts.",
                 appDesc2: "Evolution tree and skills.",
                 appDesc3: "Focused on conquering specific skills.",
+                donateTitle: "Support the Project",
+                donateText: "Calismap was born from a dream: to connect athletes, facilitate access to outdoor sports, and strengthen the calisthenics community worldwide. The app is 100% free and ad-free, but maintaining servers and updates requires time and resources. If this map has helped you find a good workout, consider buying the developer a \"supplement\" or a coffee! Any amount helps keep the enthusiasm and the project alive.",
+                paypalDesc: "Credit cards and balance accepted. You can set up a monthly donation if you wish!",
+                paypalBtn: "Donate via PayPal",
+                pixDesc: "Copy the random key below and paste it into your bank's app.",
+                pixCopied: "Key copied successfully!",
                 dbTitle: "Database",
                 dbExport: "Export Data (.json)",
                 dbExportFav: "Export Favorites (.json)",
@@ -1137,12 +1194,25 @@
 
             map.on('click', function(e) {
                 if (!isSelectingLocation) return;
-                isSelectingLocation = false;
-                document.getElementById('map-select-toast').classList.add('hidden');
-                tempLocation = { lat: e.latlng.lat, lng: e.latlng.lng };
-                document.getElementById('loc-status').innerText = t('manualMap');
-                document.getElementById('addModal').classList.remove('hidden');
-                document.getElementById('addModal').classList.add('flex');
+                triggerMapAddLocation(e.latlng);
+            });
+
+            // Suporte para clique longo (telemóvel) ou botão direito (computador)
+            map.on('contextmenu', function(e) {
+                triggerMapAddLocation(e.latlng);
+            });
+            
+            // Temporizador de segurança para garantir o "clique longo" em todos os browsers móveis
+            let pressTimer;
+            map.on('mousedown touchstart', function(e) {
+                pressTimer = setTimeout(() => {
+                    triggerMapAddLocation(e.latlng);
+                }, 600); // 600ms a segurar
+            });
+            
+            // Cancela o temporizador se o utilizador arrastar o mapa ou soltar o dedo rápido
+            map.on('mouseup mousemove touchmove touchend dragstart zoomstart', function() {
+                clearTimeout(pressTimer);
             });
 
             if (navigator.geolocation) {
@@ -1159,20 +1229,8 @@
                         }).addTo(map);
 
                         gpsMarker.on('click', () => {
-                            tempLocation = { lat: userLocation.lat, lng: userLocation.lng };
-                            document.getElementById('addModalTitle').innerText = t('newLocation');
-                            document.getElementById('addModalBtnText').innerText = t('saveBtn');
-                            document.getElementById('add-form').removeAttribute('data-edit-id');
+                            triggerMapAddLocation(userLocation);
                             document.getElementById('loc-status').innerText = t('gpsCurrent');
-                            
-                            // Reseta form state
-                            currentPhotosBase64 = [];
-                            currentLinks = [];
-                            renderPhotoPreviews();
-                            renderLinkPreviews();
-                            document.getElementById('loc-fav').checked = false;
-
-                            openModal('addModal');
                         });
 
                         renderCatalog(); 
@@ -2165,6 +2223,36 @@
             });
             lucide.createIcons();
         }
+        
+        function copyPix() {
+            const pixKey = "a56a02fa-df00-42b8-a747-c5ba99f166d0";
+            
+            const showCopiedMsg = () => {
+                const msg = document.getElementById('pix-copied-msg');
+                msg.classList.remove('opacity-0');
+                setTimeout(() => { msg.classList.add('opacity-0'); }, 2500);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(pixKey).then(showCopiedMsg);
+            } else {
+                // Fallback para navegadores/ambientes sem suporte direto à área de transferência
+                let textArea = document.createElement("textarea");
+                textArea.value = pixKey;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showCopiedMsg();
+                } catch (err) {
+                    console.error('Falha ao copiar o Pix', err);
+                }
+                document.body.removeChild(textArea);
+            }
+        }
 
         // --- MATH & UTILS ---
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -2200,6 +2288,29 @@
         }
 
         // --- ADD LOCATION ---
+        function triggerMapAddLocation(latlng) {
+            isSelectingLocation = false;
+            document.getElementById('map-select-toast').classList.add('hidden');
+            
+            tempLocation = { lat: latlng.lat, lng: latlng.lng };
+            
+            document.getElementById('addModalTitle').innerText = t('newLocation');
+            document.getElementById('addModalBtnText').innerText = t('saveBtn');
+            document.getElementById('add-form').removeAttribute('data-edit-id');
+            document.getElementById('loc-status').innerText = t('manualMap');
+            
+            document.getElementById('loc-currency').value = currentLang === 'en' ? 'USD' : 'BRL';
+            updatePricePreview();
+            
+            currentPhotosBase64 = [];
+            currentLinks = [];
+            renderPhotoPreviews();
+            renderLinkPreviews();
+            document.getElementById('loc-fav').checked = false;
+            
+            openModal('addModal');
+        }
+
         function openAddModalBtn() {
             tempLocation = null;
             document.getElementById('addModalTitle').innerText = t('newLocation');
