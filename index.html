@@ -500,11 +500,22 @@
                 
                 <!-- PayPal -->
                 <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-lg p-4 text-center mt-2 shadow-sm">
-                    <h4 class="font-bold text-gray-900 dark:text-white mb-1 flex justify-center items-center gap-2">PayPal</h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3" data-i18n="paypalDesc">Aceita cartões de crédito e saldo. Você pode configurar uma doação mensal se quiser!</p>
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-1 flex justify-center items-center gap-2">
+                        PayPal <span class="text-[10px] bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 rounded uppercase ml-1" data-i18n="paypalBadge">Único / Mensal</span>
+                    </h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3" data-i18n="paypalDesc">Escolha fazer uma contribuição única ou configurar um apoio mensal. Aceita cartões de crédito e saldo!</p>
                     <a href="https://www.paypal.com/donate/?cmd=_s-xclick&hosted_button_id=77TCV3JDWEKUG&source=url&ssrt=1774158416745" target="_blank" class="inline-block w-full bg-[#00457C] hover:bg-[#003058] text-white font-bold py-2.5 rounded-lg transition shadow-sm" data-i18n="paypalBtn">Doar via PayPal</a>
                 </div>
                 
+                <!-- Mercado Pago -->
+                <div class="bg-sky-50 dark:bg-sky-900/10 border border-sky-200 dark:border-sky-900/30 rounded-lg p-4 text-center shadow-sm">
+                    <h4 class="font-bold text-gray-900 dark:text-white mb-1 flex justify-center items-center gap-2">
+                        Mercado Pago <span class="text-[10px] bg-sky-200 dark:bg-sky-800 text-sky-800 dark:text-sky-200 px-1.5 py-0.5 rounded uppercase ml-1" data-i18n="monthly">Mensal</span>
+                    </h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3" data-i18n="mpDesc">Assinatura mensal recorrente. Aceita pagamento via cartão de crédito e boleto!</p>
+                    <a href="https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=7eacff10183240fc8c76309f61e6bd82" target="_blank" class="inline-block w-full bg-[#009EE3] hover:bg-[#007EB5] text-white font-bold py-2.5 rounded-lg transition shadow-sm" data-i18n="mpBtn">Assinar via Mercado Pago</a>
+                </div>
+
                 <!-- Pix -->
                 <div class="bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-900/30 rounded-lg p-4 text-center shadow-sm">
                     <h4 class="font-bold text-gray-900 dark:text-white mb-1 flex justify-center items-center gap-2">Pix (Brasil)</h4>
@@ -514,7 +525,8 @@
                         <span class="truncate flex-1 font-mono text-xs select-all text-left text-gray-800 dark:text-gray-200" id="pix-key">a56a02fa-df00-42b8-a747-c5ba99f166d0</span>
                         <i data-lucide="copy" class="w-4 h-4 text-gray-400 shrink-0"></i>
                     </div>
-                    <p id="pix-copied-msg" class="text-[10px] text-teal-600 dark:text-teal-400 font-bold mt-2 opacity-0 transition-opacity" data-i18n="pixCopied">Chave copiada com sucesso!</p>
+                    <p id="pix-copied-msg" class="text-[10px] text-teal-600 dark:text-teal-400 font-bold mt-1 opacity-0 transition-opacity" data-i18n="pixCopied">Chave copiada com sucesso!</p>
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-2 leading-tight" data-i18n="pixRecurring"><span class="font-bold">Dica:</span> Na maioria dos aplicativos de banco, você também pode programar este Pix como <strong>recorrente (mensal)</strong> para apoiar o projeto continuamente.</p>
                 </div>
 
             </div>
@@ -681,10 +693,15 @@
                 appDesc3: "Focado em conquistar skills específicas.",
                 donateTitle: "Apoie o Projeto",
                 donateText: "O Calismap nasceu de um sonho: conectar atletas, facilitar o acesso ao esporte ao ar livre e fortalecer a comunidade da calistenia em todo o mundo. O aplicativo é 100% gratuito e sem anúncios, mas manter os servidores e as atualizações exige tempo e recursos. Se este mapa já te ajudou a encontrar um bom treino, considere pagar um \"suplemento\" ou um café para o desenvolvedor! Qualquer valor ajuda a manter o entusiasmo e o projeto vivo.",
-                paypalDesc: "Aceita cartões de crédito e saldo. Você pode configurar uma doação mensal se quiser!",
+                paypalBadge: "Único / Mensal",
+                paypalDesc: "Escolha fazer uma contribuição única ou configurar um apoio mensal. Aceita cartões de crédito e saldo!",
                 paypalBtn: "Doar via PayPal",
+                monthly: "Mensal",
+                mpDesc: "Assinatura mensal recorrente. Aceita pagamento via cartão de crédito e boleto!",
+                mpBtn: "Assinar via Mercado Pago",
                 pixDesc: "Copie a chave aleatória abaixo e cole no aplicativo do seu banco.",
                 pixCopied: "Chave copiada com sucesso!",
+                pixRecurring: "<span class='font-bold'>Dica:</span> Na maioria dos aplicativos de banco, você também pode programar este Pix como <strong>recorrente (mensal)</strong> para apoiar o projeto continuamente.",
                 dbTitle: "Banco de Dados",
                 dbExport: "Exportar Dados (.json)",
                 dbExportFav: "Exportar Favoritos (.json)",
@@ -820,10 +837,15 @@
                 appDesc3: "Focused on conquering specific skills.",
                 donateTitle: "Support the Project",
                 donateText: "Calismap was born from a dream: to connect athletes, facilitate access to outdoor sports, and strengthen the calisthenics community worldwide. The app is 100% free and ad-free, but maintaining servers and updates requires time and resources. If this map has helped you find a good workout, consider buying the developer a \"supplement\" or a coffee! Any amount helps keep the enthusiasm and the project alive.",
-                paypalDesc: "Credit cards and balance accepted. You can set up a monthly donation if you wish!",
+                paypalBadge: "One-time / Monthly",
+                paypalDesc: "Choose to make a one-time contribution or set up monthly support. Credit cards and balance accepted!",
                 paypalBtn: "Donate via PayPal",
+                monthly: "Monthly",
+                mpDesc: "Recurring monthly subscription. Credit card and boleto accepted!",
+                mpBtn: "Subscribe via Mercado Pago",
                 pixDesc: "Copy the random key below and paste it into your bank's app.",
                 pixCopied: "Key copied successfully!",
+                pixRecurring: "<span class='font-bold'>Tip:</span> In most bank apps, you can also schedule this Pix as a <strong>recurring (monthly)</strong> transfer to continuously support the project.",
                 dbTitle: "Database",
                 dbExport: "Export Data (.json)",
                 dbExportFav: "Export Favorites (.json)",
