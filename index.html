@@ -515,6 +515,11 @@
                     </div>
                 </div>
 
+                <!-- Botão Publicar para Comunidade (Aparece só em locais privados) -->
+                <button id="det-btn-publish" onclick="publishSingleToCloud()" class="w-full bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm hidden mb-2 shadow-sm border border-blue-200 dark:border-blue-800">
+                    <i data-lucide="cloud-upload" class="w-4 h-4"></i> <span data-i18n="btnPublishCloud">Publicar na Comunidade</span>
+                </button>
+
                 <!-- Botões Edit/Del renderizados por JS (depende se é dono) -->
                 <div id="det-owner-actions" class="grid grid-cols-2 gap-2 mb-2 hidden">
                     <button id="det-btn-edit" onclick="editLocationBtn()" class="w-full bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
@@ -566,6 +571,21 @@
             </div>
 
             <div id="db-menu" class="p-5 flex flex-col gap-3 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                
+                <!-- V38: Painel Exclusivo de Administrador -->
+                <div id="admin-db-section" class="hidden flex-col gap-3 mb-2 pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-[10px] font-bold uppercase text-red-500 flex items-center gap-1"><i data-lucide="shield-alert" class="w-3 h-3"></i> <span data-i18n="adminPanel">Administrador (Nuvem)</span></span>
+                    
+                    <button onclick="syncLocalToCloud()" class="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2 shadow-sm">
+                        <i data-lucide="cloud-lightning" class="w-5 h-5"></i> <span data-i18n="btnSyncCloud">Sincronizar Celular -> Nuvem</span>
+                    </button>
+
+                    <label class="w-full bg-emerald-600 text-white hover:bg-emerald-700 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-sm">
+                        <i data-lucide="database-zap" class="w-5 h-5"></i> <span data-i18n="btnImportCloud">Importar JSON p/ Nuvem</span>
+                        <input type="file" accept=".json" class="hidden" onchange="importJsonToCloud(event)">
+                    </label>
+                </div>
+
                 <button onclick="exportData()" class="w-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
                     <i data-lucide="download" class="w-5 h-5"></i> <span data-i18n="dbExport">Exportar Dados (.json)</span>
                 </button>
@@ -630,7 +650,6 @@
 
     <!-- Modais restantes (About, Donate, Fullscreen) -->
     <div id="aboutModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
-        <!-- Content About Modal (Mantido do anterior) -->
         <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
                 <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="info" class="w-5 h-5 text-indigo-500"></i> <span data-i18n="aboutTitle">Sobre o App</span></h3>
@@ -668,7 +687,6 @@
     </div>
 
     <div id="donateModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
-        <!-- Content Donate Modal -->
         <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
                 <h3 class="text-lg font-bold flex items-center gap-2 text-emerald-600 dark:text-emerald-400"><i data-lucide="heart-handshake" class="w-5 h-5"></i> <span data-i18n="donateTitle">Apoie o Projeto</span></h3>
@@ -720,6 +738,12 @@
 
     <!-- Scripts -->
     <script>
+        // ==========================================
+        // 👑 CONFIGURAÇÃO DE ADMINISTRADOR (NUVEM):
+        // ==========================================
+        // Adicione o seu e-mail do Google aqui para liberar as opções de importação direta para Nuvem.
+        const ADMIN_EMAILS = ['4l3m4o.sh@gmail.com']; 
+
         // --- INTERNATIONALIZATION (i18n) ---
         const i18n = {
             pt: {
@@ -756,7 +780,7 @@
                 nameLabel: "Nome / Apelido do Local",
                 descLabel: "Descrição Breve",
                 
-                // V30/31/32 Access & Price & Firebase
+                // V30/31/32/38 Access, Price, Firebase & Admin
                 saveDestLabel: "Onde deseja salvar este local?",
                 saveDestCloud: "Nuvem (Comunidade)",
                 saveDestCloudDesc: "Partilhe com todos os utilizadores do app. Fica salvo online.",
@@ -764,6 +788,14 @@
                 saveDestLocalDesc: "Apenas você verá este local. Fica salvo no seu aparelho.",
                 cloudBadge: "Nuvem",
                 localBadge: "Apenas Celular",
+                adminPanel: "Administrador (Nuvem)",
+                btnSyncCloud: "Sincronizar Celular -> Nuvem",
+                btnImportCloud: "Importar JSON direto p/ Nuvem",
+                btnPublishCloud: "Publicar na Comunidade",
+                reqLoginPublish: "Você precisa entrar com sua conta Google para publicar na comunidade.",
+                alertPublishSuccess: "Local publicado com sucesso na Nuvem pública!",
+                alertAdminOnly: "Apenas administradores podem fazer isso.",
+                confirmSync: "Tem certeza? Isso enviará todos os locais do seu celular para a nuvem pública.",
 
                 photoLabel: "Fotos do Local (Até 5)",
                 accDefault: "Acesso Padrão (Grátis, Livre, Sem Restrições)",
@@ -935,6 +967,14 @@
                 saveDestLocalDesc: "Only you will see this location. Saved locally.",
                 cloudBadge: "Cloud",
                 localBadge: "Phone Only",
+                adminPanel: "Administrator (Cloud)",
+                btnSyncCloud: "Sync Phone -> Cloud",
+                btnImportCloud: "Import JSON to Cloud",
+                btnPublishCloud: "Publish to Community",
+                reqLoginPublish: "You need to sign in with Google to publish to the community.",
+                alertPublishSuccess: "Location successfully published to the public cloud!",
+                alertAdminOnly: "Only administrators can perform this action.",
+                confirmSync: "Are you sure? This will send all locations from your phone to the public cloud.",
 
                 photoLabel: "Location Photos (Up to 5)",
                 accDefault: "Default Access (Free, Open, No Restrictions)",
@@ -1075,6 +1115,19 @@
             applyTranslations();
         }
 
+        function isAdmin() {
+            return f_currentUser && f_currentUser.email && ADMIN_EMAILS.includes(f_currentUser.email.toLowerCase());
+        }
+
+        function toggleAdminPanels() {
+            const adminSec = document.getElementById('admin-db-section');
+            if (isAdmin()) {
+                if(adminSec) { adminSec.classList.remove('hidden'); adminSec.classList.add('flex'); }
+            } else {
+                if(adminSec) { adminSec.classList.add('hidden'); adminSec.classList.remove('flex'); }
+            }
+        }
+
         // --- CONSTANTS & CONFIG ---
         const DB_KEY = 'calisthenics_db';
         const EQUIPMENTS = ['pullup_all', 'pullup_high', 'pullup_med', 'pullup_low', 'parallel_bars', 'push_up_bar', 'monkey_bar', 'rings', 'ladder', 'ab_bench', 'outros'];
@@ -1096,12 +1149,11 @@
         let userLocation = null;
         let markerMap = {}; 
         
-        // V32: Separando Local vs Cloud
         let localLocations = [];
         let cloudLocations = [];
-        let locations = []; // Combinação das duas bases ativas
+        let locations = []; 
         
-        let onlineLocations = []; // Locais buscados no mapa aberto (Nominatim)
+        let onlineLocations = []; 
         let filterEquips = new Set();
         let filterConditions = new Set();
         let filterPrices = new Set();
@@ -1153,7 +1205,6 @@
             applyTranslations();
             fetchExchangeRate();
             
-            // Iniciar Firebase assincronamente (V32)
             initFirebase();
 
             document.addEventListener('click', (e) => {
@@ -1166,7 +1217,6 @@
                     }
                 }
                 
-                // Fechar menu de usuário ao clicar fora
                 const userProfile = document.getElementById('user-profile');
                 const userMenu = document.getElementById('user-menu');
                 if (userProfile && !userProfile.contains(e.target) && userMenu && !userMenu.classList.contains('hidden')) {
@@ -1175,7 +1225,7 @@
             });
         });
 
-        // --- FIREBASE CORE (V32) ---
+        // --- FIREBASE CORE ---
         async function initFirebase() {
             try {
                 // ==========================================
@@ -1200,8 +1250,6 @@
                 }
 
                 const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
-                
-                // CORREÇÃO: signInWithRedirect e getRedirectResult adicionados na importação!
                 const { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInWithRedirect, getRedirectResult } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
                 const { getFirestore, enableIndexedDbPersistence, collection, doc, setDoc, deleteDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
                 
@@ -1213,29 +1261,18 @@
                 f_auth = getAuth(app);
                 f_db = getFirestore(app);
 
-                // Ativar Cache Offline do Firebase (Persistência)
-                try {
-                    await enableIndexedDbPersistence(f_db);
-                } catch (err) {}
+                try { await enableIndexedDbPersistence(f_db); } catch (err) {}
 
-                // V35: Tratar o Redirecionamento de forma segura
                 let returnedFromRedirect = false;
                 try {
                     const redirectResult = await window.f_getRedirectResult(f_auth);
-                    if (redirectResult && redirectResult.user) {
-                        console.log("Login via redirecionamento realizado com sucesso.");
-                        returnedFromRedirect = true;
-                    }
-                } catch (redirectErr) {
-                    console.error("Erro no retorno do redirecionamento", redirectErr);
-                }
+                    if (redirectResult && redirectResult.user) { returnedFromRedirect = true; }
+                } catch (redirectErr) { console.error("Erro no retorno", redirectErr); }
 
                 const initToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
                 if (initToken) { await signInWithCustomToken(f_auth, initToken); } 
                 else { 
-                    // Aguarda meio segundo para garantir que o Firebase Auth atualizou o status
                     await new Promise(r => setTimeout(r, 500));
-                    // Só faz login anônimo se não houver usuário logado no momento E se não voltou de um redirect
                     if (!f_auth.currentUser && !returnedFromRedirect) await signInAnonymously(f_auth); 
                 }
 
@@ -1255,36 +1292,26 @@
                         if(userProfile) { userProfile.classList.add('hidden'); userProfile.classList.remove('flex'); }
                     }
 
+                    toggleAdminPanels(); // Checa se deve mostrar painel de Admin
                     if (user) listenToCloudDatabase();
                 });
 
-            // CORREÇÃO: Estas duas chaves abaixo estavam faltando!
             } catch (err) {
                 console.error("Falha ao inicializar Firebase", err);
             }
         }
 
-        // --- AUTH FUNCTIONS (V36) ---
+        // --- AUTH FUNCTIONS ---
         async function loginWithGoogle() {
             if (!f_auth) return alert("Firebase não configurado.");
             const provider = new window.f_GoogleAuthProvider();
-            
-            try {
-                // V36: Tenta abrir o Popup. Se der erro, ele vai te AVISAR o motivo exato.
-                await window.f_signInWithPopup(f_auth, provider);
-            } catch (error) {
-                console.error("Erro detalhado do Firebase:", error);
-                
+            try { await window.f_signInWithPopup(f_auth, provider); } catch (error) {
                 if (error.code === 'auth/unauthorized-domain') {
-                    alert("⚠️ ERRO DE DOMÍNIO: O Google bloqueou o acesso.\n\nO domínio 'calismap.vercel.app' ainda não foi reconhecido.\nSe você acabou de adicionar lá no Painel do Firebase, aguarde uns 10 minutinhos para os servidores atualizarem!");
-                } 
-                else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
+                    alert("⚠️ ERRO DE DOMÍNIO: O Google bloqueou o acesso.\n\nO domínio ainda não foi reconhecido.\nSe você acabou de adicionar lá no Painel do Firebase, aguarde uns 10 minutinhos para os servidores atualizarem!");
+                } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
                     alert("Seu navegador ou celular bloqueou a janelinha de login!\nRedirecionando a página inteira agora...");
                     window.f_signInWithRedirect(f_auth, provider);
-                } 
-                else {
-                    alert("Erro inesperado do Firebase:\n" + error.code + "\n" + error.message);
-                }
+                } else { alert("Erro inesperado do Firebase:\n" + error.code + "\n" + error.message); }
             }
         }
 
@@ -1303,19 +1330,17 @@
             if (!f_currentUser || !f_db) return;
             if (unsubscribeCloud) unsubscribeCloud();
 
-            // Regra 1: Path Exato -> artifacts/{appId}/public/data/locations
             const colRef = window.f_collection(f_db, 'artifacts', f_appId, 'public', 'data', 'locations');
             
-            // Escutador em tempo real (onSnapshot) com cache offline automático
             unsubscribeCloud = window.f_onSnapshot(colRef, (snapshot) => {
                 const cloudData = [];
                 snapshot.forEach(docSnapshot => {
                     const data = docSnapshot.data();
-                    data.isCloud = true; // Flag importante para o UI saber a origem
+                    data.isCloud = true;
                     cloudData.push(data);
                 });
                 cloudLocations = cloudData;
-                updateCombinedDB(); // Mistura local e nuvem e renderiza
+                updateCombinedDB(); 
             }, (error) => {
                 console.error("Erro ao escutar Nuvem: ", error);
             });
@@ -1405,11 +1430,10 @@
             if (targetCurr === 'BRL') { return `R$ ${(basePrice * usdToBrlRate).toFixed(2).replace('.', ',')}`; } else { return `$ ${(basePrice / usdToBrlRate).toFixed(2)}`; }
         }
 
-        // --- DATABASE LOGIC (V32 - LOCAL vs NUVEM) ---
+        // --- DATABASE LOGIC ---
         const defaultLocations = [];
 
         function updateCombinedDB() {
-            // Combina os dados locais e da nuvem
             locations = [...localLocations, ...cloudLocations];
             refreshMapMarkers();
             renderCatalog();
@@ -1449,7 +1473,94 @@
         function exportSingleLocation() { const loc = locations.find(l => l.id === selectedLocationId); if(loc) exportSpecificData([loc], `calismap_loc_${loc.name.replace(/\s+/g, '_')}`); }
         function closeDbModal() { closeModal('dbModal'); cancelDbAction(); }
 
-        // Importações afetam apenas o Banco Local
+        // --- IMPORT/SYNC NUVEM E LOCAL (V38) ---
+
+        // V38: Sincronizar todos os locais da memória do celular para o Firestore (Somente Admin)
+        async function syncLocalToCloud() {
+            if (!isAdmin()) { alert(t('alertAdminOnly')); return; }
+            if (localLocations.length === 0) return;
+            if (!confirm(t('confirmSync'))) return;
+            
+            closeDbModal();
+            let count = 0;
+            try {
+                for (let loc of localLocations) {
+                    loc.ownerId = f_currentUser.uid;
+                    const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', loc.id);
+                    await window.f_setDoc(docRef, loc);
+                    count++;
+                }
+                alert(`Sucesso! ${count} locais foram copiados para a nuvem.`);
+            } catch (err) {
+                alert("Erro ao sincronizar com a nuvem: " + err.message);
+            }
+        }
+
+        // V38: Importar arquivo JSON inteiro direto para o Firestore (Somente Admin)
+        async function importJsonToCloud(event) {
+            if (!isAdmin()) { alert(t('alertAdminOnly')); return; }
+            const file = event.target.files[0]; if (!file) return; 
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        closeDbModal();
+                        let count = 0;
+                        for(let loc of imported) {
+                            loc.ownerId = f_currentUser.uid;
+                            if(!loc.id) loc.id = 'loc_' + Date.now() + '_' + count;
+                            const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', loc.id);
+                            await window.f_setDoc(docRef, loc);
+                            count++;
+                        }
+                        alert(`Sucesso! ${count} locais foram salvos direto na Nuvem Pública.`);
+                    } else alert(t('alertInvalidFile'));
+                } catch (err) { alert(t('alertInvalidFile')); }
+            }; 
+            reader.readAsText(file); 
+            event.target.value = '';
+        }
+
+        // V38: Publicar um único local do celular na comunidade (Disponível para qualquer um logado)
+        async function publishSingleToCloud() {
+            if (!f_currentUser || f_currentUser.isAnonymous) {
+                alert(t('reqLoginPublish'));
+                return;
+            }
+            if(!selectedLocationId) return;
+            
+            const locIndex = localLocations.findIndex(l => l.id === selectedLocationId);
+            if(locIndex === -1) return; // Não é um local privado
+
+            const loc = localLocations[locIndex];
+            loc.ownerId = f_currentUser.uid;
+            
+            try {
+                const btn = document.getElementById('det-btn-publish');
+                btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Publicando...`;
+                lucide.createIcons();
+                
+                const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', loc.id);
+                await window.f_setDoc(docRef, loc);
+                
+                // Retira da base puramente local para evitar dor de cabeça com duplicatas
+                localLocations.splice(locIndex, 1);
+                saveLocalDB();
+                
+                closeModal('detailsModal');
+                alert(t('alertPublishSuccess'));
+            } catch(e) {
+                alert("Erro ao publicar: " + e.message);
+                const btn = document.getElementById('det-btn-publish');
+                btn.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> <span data-i18n="btnPublishCloud">${t('btnPublishCloud')}</span>`;
+                lucide.createIcons();
+            }
+        }
+
+
+        // Importações locais antigas
         function mergeData(event) {
             const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
             reader.onload = function(e) {
@@ -1663,11 +1774,9 @@
                 loc.isFavorite = !loc.isFavorite;
                 
                 if (isCloudFav) {
-                    // Favoritos da Nuvem são salvos apenas no dispositivo (não afeta o db público)
-                    // Solução: Mover uma cópia para o localLocations se for favoritado
                     if (loc.isFavorite) {
                         const localCopy = JSON.parse(JSON.stringify(loc));
-                        localCopy.id = 'loc_copy_' + loc.id; // Evitar colisão
+                        localCopy.id = 'loc_copy_' + loc.id;
                         localCopy.isCloud = false;
                         localLocations.push(localCopy);
                     }
@@ -1700,17 +1809,14 @@
             const doSearch = document.getElementById('search-local') ? document.getElementById('search-local').checked : true;
             const doOnline = document.getElementById('search-online') ? document.getElementById('search-online').checked : false;
 
-            // V32: Filtros de Origem de Dados
             const showCloud = document.getElementById('filter-db-cloud') ? document.getElementById('filter-db-cloud').checked : true;
             const showLocal = document.getElementById('filter-db-local') ? document.getElementById('filter-db-local').checked : true;
 
             if (doSearch) {
-                // Junta a base total baseado nos checkboxes
                 let baseLocations = [];
                 if (showLocal) baseLocations = [...baseLocations, ...localLocations];
                 if (showCloud) baseLocations = [...baseLocations, ...cloudLocations];
 
-                // Remove duplicados pelo ID (se houver cópias)
                 const uniqueLocs = []; const mapIds = new Set();
                 for (const item of baseLocations) {
                     if (!mapIds.has(item.id)) { mapIds.add(item.id); uniqueLocs.push(item); }
@@ -1768,7 +1874,6 @@
                 const eqs = normalizeEqs(loc.equipments); const avgCond = getAverageCondition(eqs);
                 const badgeClass = loc.isOnline ? 'bg-blue-500 border-blue-500' : CONDITIONS[avgCond].bg;
                 
-                // V32: Ícone azul para Nuvem, Indigo para Local
                 let mainIconBg = 'bg-indigo-600';
                 if (loc.isCloud) mainIconBg = 'bg-blue-500';
                 if (loc.isOnline) mainIconBg = 'bg-emerald-600';
@@ -1844,7 +1949,7 @@
 
                 let borderClass = `border-l-4 ${condData ? condData.border : 'border-gray-300'}`;
                 if (loc.isOnline) borderClass = 'border-l-4 border-emerald-500';
-                else if (loc.isCloud) borderClass = 'border-l-4 border-blue-500'; // Destaca Nuvem de azul no list mode
+                else if (loc.isCloud) borderClass = 'border-l-4 border-blue-500'; 
 
                 if (viewMode === 'list') {
                     html += `
@@ -1972,7 +2077,6 @@
             
             document.getElementById('acc-default-cb').checked = true; toggleAccessPanel();
             
-            // Exibe a opção de Nuvem por padrão
             document.getElementById('save-destination-panel').classList.remove('hidden');
             if(f_currentUser) document.querySelector('input[name="save_dest"][value="cloud"]').checked = true;
             else document.querySelector('input[name="save_dest"][value="local"]').checked = true;
@@ -2011,11 +2115,9 @@
                     const img = new Image();
                     img.onload = function() {
                         const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                        // V32: MaxW reduzido para garantir docs < 1MB no Firestore
                         const maxW = 600; const maxH = 600; let width = img.width; let height = img.height;
                         if (width > height) { if (width > maxW) { height *= maxW / width; width = maxW; } } else { if (height > maxH) { width *= maxH / height; height = maxH; } }
                         canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height);
-                        // Quality 0.5 for compression
                         currentPhotosBase64.push(canvas.toDataURL('image/jpeg', 0.5)); renderPhotoPreviews();
                     }
                     img.src = e.target.result;
@@ -2032,7 +2134,6 @@
         }
         function removePhoto(idx) { currentPhotosBase64.splice(idx, 1); renderPhotoPreviews(); }
 
-        // V32: Saving to Cloud or Local
         async function saveLocation(e) {
             e.preventDefault();
             
@@ -2040,14 +2141,12 @@
             const desc = document.getElementById('loc-desc').value;
             const isFavorite = document.getElementById('loc-fav').checked;
             
-            // Destination
             const destPanel = document.getElementById('save-destination-panel');
             let isCloudDest = false;
             if (!destPanel.classList.contains('hidden')) {
                 isCloudDest = document.querySelector('input[name="save_dest"]:checked').value === 'cloud';
             }
             
-            // Access Data
             const isDefault = document.getElementById('acc-default-cb').checked;
             let accessData = { isDefault: true, isFree: true, price: 0, currency: 'BRL', types: ['livre'], restrito: null, particular: null };
             if (!isDefault) {
@@ -2081,7 +2180,6 @@
             let targetLoc = null;
             let targetList = '';
 
-            // Edição
             if (editId && editId.startsWith('loc_')) {
                 let idx = localLocations.findIndex(l => l.id === editId);
                 if (idx !== -1) { targetLoc = localLocations[idx]; targetList = 'local'; }
@@ -2106,7 +2204,6 @@
                     }
                 }
             } else {
-                // Criação
                 let lat, lng;
                 if (tempLocation) { lat = tempLocation.lat; lng = tempLocation.lng; } else if (userLocation) { lat = userLocation.lat; lng = userLocation.lng; } else { const center = map.getCenter(); lat = center.lat; lng = center.lng; }
                 const locId = 'loc_' + Date.now() + Math.floor(Math.random() * 1000);
@@ -2162,9 +2259,10 @@
             const actionWeb = document.getElementById('det-web-actions');
             const btnDel = document.getElementById('det-btn-del');
             const btnEdit = document.getElementById('det-btn-edit');
+            const btnPublish = document.getElementById('det-btn-publish');
             
             badgeContainer.innerHTML = ''; extraInfoContainer.innerHTML = ''; extraInfoContainer.classList.add('hidden');
-            actionOwner.classList.add('hidden'); actionWeb.classList.add('hidden'); btnDel.classList.add('hidden');
+            actionOwner.classList.add('hidden'); actionWeb.classList.add('hidden'); btnDel.classList.add('hidden'); btnPublish.classList.add('hidden');
 
             if (loc.isOnline) {
                 badgeContainer.innerHTML = `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200"><i data-lucide="globe" class="w-3 h-3 inline"></i> ${t('internetLoc')}</span>`;
@@ -2173,7 +2271,6 @@
             } else {
                 const eqs = normalizeEqs(loc.equipments); const avgCond = getAverageCondition(eqs); const avgData = CONDITIONS[avgCond];
                 
-                // V32 Badges
                 if (loc.isCloud) badgeContainer.innerHTML += `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200" title="Nuvem Compartilhada"><i data-lucide="cloud" class="w-3 h-3 inline"></i> Nuvem</span>`;
                 else badgeContainer.innerHTML += `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-300 dark:border-gray-700" title="Apenas seu Celular"><i data-lucide="smartphone" class="w-3 h-3 inline"></i> Celular</span>`;
 
@@ -2197,7 +2294,11 @@
                     eqs.forEach(eq => { const label = t(eq.id); const cData = CONDITIONS[eq.condition || 0]; const condLabel = t('cond' + (eq.condition || 0)); const extra = eq.desc ? `<span class="text-gray-500 dark:text-gray-400 italic text-[10px] block mt-0.5">- ${eq.desc}</span>` : ''; eqContainer.innerHTML += `<div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700"><div class="flex flex-col"><span class="text-sm font-semibold">${label}</span>${extra}</div><span class="text-[10px] px-1.5 py-0.5 font-bold rounded-full ${cData.badge}">${condLabel}</span></div>`; });
                 } else { eqContainer.innerHTML = `<span class="text-xs text-gray-400">${t('noEq')}</span>`; }
 
-                // V37: Owner check for Cloud items
+                // V38: Botão de Publicação só aparece se for 100% offline (celular)
+                if (!loc.isCloud && !loc.isOnline) {
+                    btnPublish.classList.remove('hidden');
+                }
+
                 const isOwner = loc.isCloud ? (f_currentUser && loc.ownerId === f_currentUser.uid) : true;
                 actionOwner.classList.remove('hidden');
                 
@@ -2240,7 +2341,7 @@
             const loc = locations.find(l => l.id === selectedLocationId) || onlineLocations.find(l => l.id === selectedLocationId);
             if(!loc) return;
             
-            document.getElementById('save-destination-panel').classList.add('hidden'); // Ocultar destino ao editar
+            document.getElementById('save-destination-panel').classList.add('hidden'); 
 
             document.getElementById('loc-name').value = loc.name;
             document.getElementById('loc-desc').value = loc.desc || '';
