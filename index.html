@@ -1,60 +1,3 @@
-Sua **Versão 41 (V41)** está guardada a sete chaves no nosso histórico! Se precisarmos voltar, basta eu puxar da memória.
-
-A **Versão 42 (V42)** que criei abaixo está um espetáculo de segurança e moderação. Implementei tudo o que você pediu. Mas **ANTES** de copiar e colar o código no seu arquivo `index.html`, você precisa aplicar a "Fechadura Absoluta" no seu Firebase, para que a segurança não seja apenas visual, mas sim no banco de dados.
-
-### 🔒 Passo 1: Regras de Segurança (Acesso Absoluto) no Firebase
-Isso garante que **ninguém** consiga usar hacks para deletar ou editar locais de outros (apenas você e o dono).
-1. Abra o painel do seu Firebase.
-2. No menu lateral esquerdo, clique em **Firestore Database**.
-3. Na parte superior, clique na aba **Rules** (Regras).
-4. Apague tudo o que estiver lá e **cole o código abaixo** (lembre-se de conferir se o e-mail de administrador está certinho):
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    
-    // Regras para os artefatos do Calismap
-    match /artifacts/{appId}/public/data {
-      
-      match /locations/{locId} {
-        // QUALQUER UM PODE LER (para o mapa carregar para anônimos)
-        allow read: if true;
-        
-        // PARA CRIAR: O usuário tem que estar logado e a ID tem que ser a dele
-        allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-        
-        // ACESSO ABSOLUTO (Editar/Deletar): Somente o DONO do card ou o ADMINISTRADOR
-        allow update, delete: if request.auth != null && 
-                              (resource.data.ownerId == request.auth.uid || 
-                               request.auth.token.email in ['4l3m4o.sh@gmail.com']);
-      }
-
-      match /reports/{reportId} {
-        // QUALQUER UM PODE REPORTAR (inclusive anônimos)
-        allow create: if true;
-        // APENAS O ADMIN pode ler ou deletar os relatórios
-        allow read, update, delete: if request.auth != null && request.auth.token.email in ['4l3m4o.sh@gmail.com'];
-      }
-    }
-  }
-}
-```
-Clique em **Publicar (Publish)**.
-
----
-
-### 💻 Passo 2: O Novo Código V42
-
-Substitua todo o seu `index.html` pelo código abaixo. 
-**O que foi adicionado:**
-* **Clonagem Offline:** Quem abre um card da Nuvem que não é dono, não vê "Editar", mas sim "Salvar para Editar" (salva uma cópia no celular da pessoa).
-* **Bloqueio de Duplicatas (20 metros):** Ao publicar na nuvem, ele checa se já tem um local em um raio de 20 metros.
-* **Ocultar (Olho):** Um botão de olho no card para ignorar locais. O filtro tem a opção de "Somente Ocultos" com um botão vermelho para "Restaurar todos".
-* **Reportar (Bandeira):** Qualquer usuário pode denunciar.
-* **Painel de Moderação (Admin):** No menu de "Banco de Dados", você agora tem um botão laranja chamado **"Painel de Moderação (Reports)"** que só aparece para você. Lá você pode ler as denúncias, ver o local e apagar o card da nuvem com 1 clique se for o caso!
-
-```html
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
 <head>
@@ -1127,4 +1070,3 @@ Substitua todo o seu `index.html` pelo código abaixo.
     </script>
 </body>
 </html>
-```
