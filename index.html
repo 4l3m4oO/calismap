@@ -1264,16 +1264,27 @@
             }
         }
 
-        // --- AUTH FUNCTIONS (V35) ---
+        // --- AUTH FUNCTIONS (V36) ---
         async function loginWithGoogle() {
             if (!f_auth) return alert("Firebase não configurado.");
             const provider = new window.f_GoogleAuthProvider();
             
             try {
-                // V35: Mudar DEFINITIVAMENTE para Redirecionamento (Navegadores e Celulares bloqueiam popups)
-                await window.f_signInWithRedirect(f_auth, provider);
+                // V36: Tenta abrir o Popup. Se der erro, ele vai te AVISAR o motivo exato.
+                await window.f_signInWithPopup(f_auth, provider);
             } catch (error) {
-                alert("Não foi possível iniciar o login: " + error.message);
+                console.error("Erro detalhado do Firebase:", error);
+                
+                if (error.code === 'auth/unauthorized-domain') {
+                    alert("⚠️ ERRO DE DOMÍNIO: O Google bloqueou o acesso.\n\nO domínio 'calismap.vercel.app' ainda não foi reconhecido.\nSe você acabou de adicionar lá no Painel do Firebase, aguarde uns 10 minutinhos para os servidores atualizarem!");
+                } 
+                else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
+                    alert("Seu navegador ou celular bloqueou a janelinha de login!\nRedirecionando a página inteira agora...");
+                    window.f_signInWithRedirect(f_auth, provider);
+                } 
+                else {
+                    alert("Erro inesperado do Firebase:\n" + error.code + "\n" + error.message);
+                }
             }
         }
 
