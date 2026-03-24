@@ -2213,7 +2213,8 @@
                     equipments: selectedEqs, photos: [...currentPhotosBase64], links: [...currentLinks], isFavorite: isFavorite, timestamp: Date.now()
                 };
 
-                if (isCloudDest && f_currentUser && f_db) {
+                // V39: Segurança extra para impedir salvamento público se for anônimo
+                if (isCloudDest && f_currentUser && !f_currentUser.isAnonymous && f_db) {
                     newLoc.ownerId = f_currentUser.uid;
                     try {
                         const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', newLoc.id);
