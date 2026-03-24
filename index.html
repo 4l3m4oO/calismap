@@ -2160,9 +2160,11 @@
             
             const actionOwner = document.getElementById('det-owner-actions');
             const actionWeb = document.getElementById('det-web-actions');
+            const btnDel = document.getElementById('det-btn-del');
+            const btnEdit = document.getElementById('det-btn-edit');
             
             badgeContainer.innerHTML = ''; extraInfoContainer.innerHTML = ''; extraInfoContainer.classList.add('hidden');
-            actionOwner.classList.add('hidden'); actionWeb.classList.add('hidden');
+            actionOwner.classList.add('hidden'); actionWeb.classList.add('hidden'); btnDel.classList.add('hidden');
 
             if (loc.isOnline) {
                 badgeContainer.innerHTML = `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200"><i data-lucide="globe" class="w-3 h-3 inline"></i> ${t('internetLoc')}</span>`;
@@ -2195,15 +2197,20 @@
                     eqs.forEach(eq => { const label = t(eq.id); const cData = CONDITIONS[eq.condition || 0]; const condLabel = t('cond' + (eq.condition || 0)); const extra = eq.desc ? `<span class="text-gray-500 dark:text-gray-400 italic text-[10px] block mt-0.5">- ${eq.desc}</span>` : ''; eqContainer.innerHTML += `<div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700"><div class="flex flex-col"><span class="text-sm font-semibold">${label}</span>${extra}</div><span class="text-[10px] px-1.5 py-0.5 font-bold rounded-full ${cData.badge}">${condLabel}</span></div>`; });
                 } else { eqContainer.innerHTML = `<span class="text-xs text-gray-400">${t('noEq')}</span>`; }
 
-                // V32: Owner check for Cloud items
+                // V37: Owner check for Cloud items
                 const isOwner = loc.isCloud ? (f_currentUser && loc.ownerId === f_currentUser.uid) : true;
+                actionOwner.classList.remove('hidden');
+                
                 if (isOwner) {
-                    actionOwner.classList.remove('hidden');
-                    actionOwner.classList.add('grid');
+                    btnEdit.classList.remove('hidden');
+                    btnDel.classList.remove('hidden');
+                    actionOwner.classList.remove('grid-cols-1');
+                    actionOwner.classList.add('grid-cols-2');
                 } else {
-                    // Just show export for non-owners
-                    actionOwner.innerHTML = `<button onclick="exportSingleLocation()" class="col-span-2 w-full bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm"><i data-lucide="download" class="w-4 h-4"></i> <span data-i18n="btnExport">Exportar</span></button>`;
-                    actionOwner.classList.remove('hidden');
+                    btnEdit.classList.add('hidden');
+                    btnDel.classList.add('hidden');
+                    actionOwner.classList.remove('grid-cols-2');
+                    actionOwner.classList.add('grid-cols-1');
                 }
             }
 
