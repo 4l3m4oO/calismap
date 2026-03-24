@@ -521,7 +521,7 @@
                     <i data-lucide="cloud-upload" class="w-4 h-4"></i> <span data-i18n="btnPublishCloud">Publicar na Comunidade</span>
                 </button>
 
-                <!-- V40: Info do Autor / Data (HTML QUE ESTAVA FALTANDO) -->
+                <!-- V40: Info do Autor / Data -->
                 <div id="det-author-info" class="text-[10px] text-gray-500 dark:text-gray-400 mt-3 mb-3 text-center hidden"></div>
 
                 <!-- Botões Edit/Del renderizados por JS (depende se é dono) -->
@@ -1157,7 +1157,7 @@
         let tempLocation = null;
         let isSelectingLocation = false;
         let tileLayer;
-        let mapTheme = 'light';
+        let mapTheme = localStorage.getItem('calismap_map_theme') || 'light';
         let dbCountdownInterval = null;
         let searchTimeout = null;
         let searchTerm = '';
@@ -1285,8 +1285,10 @@
                     }
 
                     toggleAdminPanels(); // Checa se deve mostrar painel de Admin
-                    if (user) listenToCloudDatabase();
                 });
+
+                // V41: Carrega a nuvem pública imediatamente, sem depender de login/anônimo!
+                listenToCloudDatabase();
 
             } catch (err) {
                 console.error("Falha ao inicializar Firebase", err);
@@ -1319,7 +1321,7 @@
         function toggleUserMenu() { document.getElementById('user-menu').classList.toggle('hidden'); }
 
         function listenToCloudDatabase() {
-            if (!f_currentUser || !f_db) return;
+            if (!f_db) return; // Removida a trava do currentUser para permitir leitura pública
             if (unsubscribeCloud) unsubscribeCloud();
 
             const colRef = window.f_collection(f_db, 'artifacts', f_appId, 'public', 'data', 'locations');
@@ -1377,6 +1379,7 @@
             lucide.createIcons();
         }
         function updateCarouselIndicator(e) { const el = e.target; const total = el.children.length; if(total <= 1) return; document.getElementById('det-img-counter').innerText = `${Math.round(el.scrollLeft / el.clientWidth) + 1} / ${total}`; }
+        function toggleMapTheme() { mapTheme = mapTheme === 'light' ? 'dark' : 'light'; localStorage.setItem('calismap_map_theme', mapTheme); if (tileLayer) { tileLayer.setUrl(MAP_URLS[mapTheme]); } }
         function toggleTheme() { const html = document.documentElement; if (html.classList.contains('dark')) { html.classList.remove('dark'); localStorage.setItem('theme', 'light'); document.getElementById('theme-icon-dark').classList.add('hidden'); document.getElementById('theme-icon-light').classList.remove('hidden'); } else { html.classList.add('dark'); localStorage.setItem('theme', 'dark'); document.getElementById('theme-icon-dark').classList.remove('hidden'); document.getElementById('theme-icon-light').classList.add('hidden'); } }
         function initTheme() { if (localStorage.getItem('theme') === 'light') toggleTheme(); }
 
@@ -2321,7 +2324,7 @@
                     eqs.forEach(eq => { const label = t(eq.id); const cData = CONDITIONS[eq.condition || 0]; const condLabel = t('cond' + (eq.condition || 0)); const extra = eq.desc ? `<span class="text-gray-500 dark:text-gray-400 italic text-[10px] block mt-0.5">- ${eq.desc}</span>` : ''; eqContainer.innerHTML += `<div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700"><div class="flex flex-col"><span class="text-sm font-semibold">${label}</span>${extra}</div><span class="text-[10px] px-1.5 py-0.5 font-bold rounded-full ${cData.badge}">${condLabel}</span></div>`; });
                 } else { eqContainer.innerHTML = `<span class="text-xs text-gray-400">${t('noEq')}</span>`; }
 
-                // V40: Renderização discreta de quem adicionou, data e alterações
+                // V40/V41: Renderização discreta de quem adicionou, data e alterações
                 const authorInfoEl = document.getElementById('det-author-info');
                 if (authorInfoEl) {
                     const dateStr = loc.timestamp ? new Date(loc.timestamp).toLocaleDateString('pt-BR') : '--/--/----';
@@ -2330,9 +2333,17 @@
                     if (loc.isCloud && loc.ownerId) {
                         const totalCloud = cloudLocations.length;
                         const userTotal = cloudLocations.filter(l => l.ownerId === loc.ownerId).length;
-                        const authorName = loc.ownerName || 'Usuário';
                         
-                        const nameHtml = loc.ownerIsAdmin 
+                        let isLocAdmin = loc.ownerIsAdmin;
+                        let authorName = loc.ownerName || 'Usuário';
+                        
+                        // Correção para forçar visual de admin nos cards antigos seus que estavam sem nome
+                        if (f_currentUser && loc.ownerId === f_currentUser.uid && isAdmin()) {
+                            isLocAdmin = true;
+                            if (!loc.ownerName) authorName = f_currentUser.displayName || 'Administrador';
+                        }
+                        
+                        const nameHtml = isLocAdmin 
                             ? `<span class="text-[#d4af37] font-bold tracking-wide" title="Administrador do Calismap">${authorName} <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline pb-0.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>` 
                             : `<span class="font-semibold text-gray-600 dark:text-gray-300">${authorName}</span>`;
 
@@ -2354,7 +2365,7 @@
                 const isOwner = loc.isCloud ? (f_currentUser && loc.ownerId === f_currentUser.uid) : true;
                 actionOwner.classList.remove('hidden');
                 
-                if (isOwner) {
+                if (isOwner || isAdmin()) { // Administradores sempre podem editar locais da nuvem
                     btnEdit.classList.remove('hidden');
                     btnDel.classList.remove('hidden');
                     actionOwner.classList.remove('grid-cols-1');
