@@ -1200,12 +1200,13 @@
                 }
 
                 const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
-                const { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
+                
+                // CORREÇÃO: signInWithRedirect e getRedirectResult adicionados na importação!
+                const { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInWithRedirect, getRedirectResult } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
                 const { getFirestore, enableIndexedDbPersistence, collection, doc, setDoc, deleteDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
                 
-                // Exportando para janela para serem usados globalmente
                 window.f_collection = collection; window.f_doc = doc; window.f_setDoc = setDoc; window.f_deleteDoc = deleteDoc; window.f_onSnapshot = onSnapshot;
-                window.f_GoogleAuthProvider = GoogleAuthProvider; window.f_signInWithPopup = signInWithPopup; window.f_signOut = signOut;
+                window.f_GoogleAuthProvider = GoogleAuthProvider; window.f_signInWithPopup = signInWithPopup; window.f_signOut = signOut; window.f_signInWithRedirect = signInWithRedirect; window.f_getRedirectResult = getRedirectResult;
 
                 const firebaseConfig = JSON.parse(firebaseConfigStr);
                 const app = initializeApp(firebaseConfig);
@@ -1215,15 +1216,28 @@
                 // Ativar Cache Offline do Firebase (Persistência)
                 try {
                     await enableIndexedDbPersistence(f_db);
-                    console.log("Firebase Offline Cache ativado!");
-                } catch (err) {
-                    console.warn("Não foi possível ativar cache offline do Firebase: ", err);
+                } catch (err) {}
+
+                // V35: Tratar o Redirecionamento de forma segura
+                let returnedFromRedirect = false;
+                try {
+                    const redirectResult = await window.f_getRedirectResult(f_auth);
+                    if (redirectResult && redirectResult.user) {
+                        console.log("Login via redirecionamento realizado com sucesso.");
+                        returnedFromRedirect = true;
+                    }
+                } catch (redirectErr) {
+                    console.error("Erro no retorno do redirecionamento", redirectErr);
                 }
 
-                // Autenticação Segura (Regra 3)
                 const initToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
                 if (initToken) { await signInWithCustomToken(f_auth, initToken); } 
-                else { await signInAnonymously(f_auth); }
+                else { 
+                    // Aguarda meio segundo para garantir que o Firebase Auth atualizou o status
+                    await new Promise(r => setTimeout(r, 500));
+                    // Só faz login anônimo se não houver usuário logado no momento E se não voltou de um redirect
+                    if (!f_auth.currentUser && !returnedFromRedirect) await signInAnonymously(f_auth); 
+                }
 
                 onAuthStateChanged(f_auth, (user) => {
                     f_currentUser = user;
@@ -1244,17 +1258,25 @@
                     if (user) listenToCloudDatabase();
                 });
 
+            // CORREÇÃO: Estas duas chaves abaixo estavam faltando!
             } catch (err) {
                 console.error("Falha ao inicializar Firebase", err);
             }
         }
 
-        // --- AUTH FUNCTIONS ---
+        // --- AUTH FUNCTIONS (V35) ---
         async function loginWithGoogle() {
-            if (!f_auth) return alert("Firebase não configurado. Adicione sua chave no código.");
+            if (!f_auth) return alert("Firebase não configurado.");
             const provider = new window.f_GoogleAuthProvider();
-            try { await window.f_signInWithPopup(f_auth, provider); } catch (error) { console.error("Erro no login", error); }
+            
+            try {
+                // V35: Mudar DEFINITIVAMENTE para Redirecionamento (Navegadores e Celulares bloqueiam popups)
+                await window.f_signInWithRedirect(f_auth, provider);
+            } catch (error) {
+                alert("Não foi possível iniciar o login: " + error.message);
+            }
         }
+
         async function logout() {
             if (!f_auth) return;
             try {
