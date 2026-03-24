@@ -177,7 +177,7 @@
                         </select>
                     </div>
 
-                    <!-- V32: Filtro de Banco de Dados -->
+                    <!-- Filtro de Banco de Dados -->
                     <span data-i18n="filterDbLabel" class="text-xs font-bold uppercase text-gray-500 mt-2">Origem dos Dados</span>
                     <div class="flex flex-col gap-1 text-sm">
                         <label class="flex items-center gap-2 cursor-pointer font-semibold text-blue-600 dark:text-blue-400 hover:opacity-80 transition">
@@ -250,7 +250,7 @@
                 <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
                 <button onclick="openModal('aboutModal')" class="text-indigo-500 font-bold hover:underline" data-i18n="aboutBtn">Sobre</button>
                 <span class="text-gray-300 dark:text-gray-700 hidden sm:inline">|</span>
-                <label class="flex items-center gap-1 cursor-pointer hover:text-indigo-500 transition" data-i18n-title="autoRouteTitle" title="Traçar rota automaticamente ao selecionar local">
+                <label class="flex items-center gap-1 cursor-pointer hover:text-indigo-500 transition" data-i18n-title="autoRouteTitle" title="Traçar rota automatically ao selecionar local">
                     <input type="checkbox" id="auto-route-cb" onchange="toggleAutoRoute()" class="accent-indigo-500 w-3 h-3">
                     <i data-lucide="route" class="w-3 h-3"></i> <span data-i18n="autoRouteBtn">Auto-Rota</span>
                 </label>
@@ -274,18 +274,19 @@
             <div class="p-4 overflow-y-auto flex-1 custom-scrollbar">
                 <form id="add-form" onsubmit="saveLocation(event)" class="space-y-4">
                     
-                    <!-- V32: Opção de Salvar na Nuvem ou Local -->
+                    <!-- Opção de Salvar na Nuvem ou Local (V39 - Com Trava de Segurança) -->
                     <div id="save-destination-panel" class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                         <label class="block text-sm font-bold text-blue-800 dark:text-blue-300 mb-2" data-i18n="saveDestLabel">Onde deseja salvar este local?</label>
                         <div class="flex flex-col gap-2">
-                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded border border-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
+                            <label id="label-dest-cloud" class="flex items-center gap-2 cursor-pointer p-2 rounded border border-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
                                 <input type="radio" name="save_dest" value="cloud" checked class="w-4 h-4 accent-blue-600">
                                 <div class="flex flex-col">
                                     <span class="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1"><i data-lucide="cloud-upload" class="w-4 h-4 text-blue-500"></i> <span data-i18n="saveDestCloud">Nuvem (Comunidade)</span></span>
                                     <span class="text-[10px] text-gray-500 dark:text-gray-400" data-i18n="saveDestCloudDesc">Partilhe com todos os utilizadores do app. Fica salvo online.</span>
+                                    <span id="cloud-login-warning" class="text-[10px] text-red-500 font-bold hidden mt-1" data-i18n="reqLoginPublish">Você precisa entrar com sua conta Google para publicar na comunidade.</span>
                                 </div>
                             </label>
-                            <label class="flex items-center gap-2 cursor-pointer p-2 rounded border border-transparent hover:bg-gray-200 dark:hover:bg-gray-800 transition">
+                            <label id="label-dest-local" class="flex items-center gap-2 cursor-pointer p-2 rounded border border-transparent hover:bg-gray-200 dark:hover:bg-gray-800 transition">
                                 <input type="radio" name="save_dest" value="local" class="w-4 h-4 accent-gray-600">
                                 <div class="flex flex-col">
                                     <span class="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1"><i data-lucide="smartphone" class="w-4 h-4 text-gray-500"></i> <span data-i18n="saveDestLocal">Apenas neste celular (Privado)</span></span>
@@ -305,7 +306,7 @@
                         <textarea id="loc-desc" rows="2" class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
                     </div>
 
-                    <!-- Access & Price Panel (V30) -->
+                    <!-- Access & Price Panel -->
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-800/50">
                         <label class="flex items-center gap-2 cursor-pointer font-bold text-sm text-indigo-700 dark:text-indigo-400 mb-1">
                             <input type="checkbox" id="acc-default-cb" checked onchange="toggleAccessPanel()" class="w-4 h-4 accent-indigo-600 rounded">
@@ -520,6 +521,9 @@
                     <i data-lucide="cloud-upload" class="w-4 h-4"></i> <span data-i18n="btnPublishCloud">Publicar na Comunidade</span>
                 </button>
 
+                <!-- V40: Info do Autor / Data (HTML QUE ESTAVA FALTANDO) -->
+                <div id="det-author-info" class="text-[10px] text-gray-500 dark:text-gray-400 mt-3 mb-3 text-center hidden"></div>
+
                 <!-- Botões Edit/Del renderizados por JS (depende se é dono) -->
                 <div id="det-owner-actions" class="grid grid-cols-2 gap-2 mb-2 hidden">
                     <button id="det-btn-edit" onclick="editLocationBtn()" class="w-full bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
@@ -572,7 +576,7 @@
 
             <div id="db-menu" class="p-5 flex flex-col gap-3 overflow-y-auto max-h-[60vh] custom-scrollbar">
                 
-                <!-- V38: Painel Exclusivo de Administrador -->
+                <!-- Painel Exclusivo de Administrador -->
                 <div id="admin-db-section" class="hidden flex-col gap-3 mb-2 pb-3 border-b border-gray-200 dark:border-gray-700">
                     <span class="text-[10px] font-bold uppercase text-red-500 flex items-center gap-1"><i data-lucide="shield-alert" class="w-3 h-3"></i> <span data-i18n="adminPanel">Administrador (Nuvem)</span></span>
                     
@@ -741,7 +745,6 @@
         // ==========================================
         // 👑 CONFIGURAÇÃO DE ADMINISTRADOR (NUVEM):
         // ==========================================
-        // Adicione o seu e-mail do Google aqui para liberar as opções de importação direta para Nuvem.
         const ADMIN_EMAILS = ['4l3m4o.sh@gmail.com']; 
 
         // --- INTERNATIONALIZATION (i18n) ---
@@ -780,7 +783,6 @@
                 nameLabel: "Nome / Apelido do Local",
                 descLabel: "Descrição Breve",
                 
-                // V30/31/32/38 Access, Price, Firebase & Admin
                 saveDestLabel: "Onde deseja salvar este local?",
                 saveDestCloud: "Nuvem (Comunidade)",
                 saveDestCloudDesc: "Partilhe com todos os utilizadores do app. Fica salvo online.",
@@ -909,21 +911,11 @@
                 state: "Estado",
                 currency: "R$",
                 approx: "Aprox.",
-                btnConfirmClear: "Confirmar Exclusão",
+                btnConfirmClear: "Confirm Exclusão",
                 btnConfirmReplace: "Selecionar Arquivo e Substituir",
                 btnConfirmWait: "Confirmar",
                 favHelpWeb: "Para favoritar este local da internet, clique em 'Salvar na minha Lista' abaixo.",
-                pullup_all: "Barra Fixa (Todas)",
-                pullup_high: "Barra Fixa Alta",
-                pullup_med: "Barra Fixa Média",
-                pullup_low: "Barra Fixa Baixa",
-                parallel_bars: "Barra Paralela",
-                push_up_bar: "Push Up Bar",
-                monkey_bar: "Monkey Bar",
-                rings: "Argolas",
-                ladder: "Espaldar",
-                ab_bench: "Prancha Abdominal",
-                outros: "Outros (Especificar)",
+                pullup_all: "Barra Fixa (Todas)", pullup_high: "Barra Fixa Alta", pullup_med: "Barra Fixa Média", pullup_low: "Barra Fixa Baixa", parallel_bars: "Barra Paralela", push_up_bar: "Push Up Bar", monkey_bar: "Monkey Bar", rings: "Argolas", ladder: "Espaldar", ab_bench: "Prancha Abdominal", outros: "Outros (Especificar)",
                 cond6: "Excelente", cond5: "Ótimo", cond4: "Bom", cond3: "Mediano", cond2: "Ruim", cond1: "Péssimo", cond0: "Não informado"
             },
             en: {
@@ -1473,9 +1465,8 @@
         function exportSingleLocation() { const loc = locations.find(l => l.id === selectedLocationId); if(loc) exportSpecificData([loc], `calismap_loc_${loc.name.replace(/\s+/g, '_')}`); }
         function closeDbModal() { closeModal('dbModal'); cancelDbAction(); }
 
-        // --- IMPORT/SYNC NUVEM E LOCAL (V38) ---
+        // --- IMPORT/SYNC NUVEM E LOCAL ---
 
-        // V38: Sincronizar todos os locais da memória do celular para o Firestore (Somente Admin)
         async function syncLocalToCloud() {
             if (!isAdmin()) { alert(t('alertAdminOnly')); return; }
             if (localLocations.length === 0) return;
@@ -1486,6 +1477,8 @@
             try {
                 for (let loc of localLocations) {
                     loc.ownerId = f_currentUser.uid;
+                    loc.ownerName = f_currentUser.displayName || 'Administrador';
+                    loc.ownerIsAdmin = true;
                     const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', loc.id);
                     await window.f_setDoc(docRef, loc);
                     count++;
@@ -1496,7 +1489,6 @@
             }
         }
 
-        // V38: Importar arquivo JSON inteiro direto para o Firestore (Somente Admin)
         async function importJsonToCloud(event) {
             if (!isAdmin()) { alert(t('alertAdminOnly')); return; }
             const file = event.target.files[0]; if (!file) return; 
@@ -1510,6 +1502,8 @@
                         let count = 0;
                         for(let loc of imported) {
                             loc.ownerId = f_currentUser.uid;
+                            loc.ownerName = f_currentUser.displayName || 'Administrador';
+                            loc.ownerIsAdmin = true;
                             if(!loc.id) loc.id = 'loc_' + Date.now() + '_' + count;
                             const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', loc.id);
                             await window.f_setDoc(docRef, loc);
@@ -1523,7 +1517,6 @@
             event.target.value = '';
         }
 
-        // V38: Publicar um único local do celular na comunidade (Disponível para qualquer um logado)
         async function publishSingleToCloud() {
             if (!f_currentUser || f_currentUser.isAnonymous) {
                 alert(t('reqLoginPublish'));
@@ -1536,6 +1529,8 @@
 
             const loc = localLocations[locIndex];
             loc.ownerId = f_currentUser.uid;
+            loc.ownerName = f_currentUser.displayName || 'Usuário';
+            loc.ownerIsAdmin = isAdmin();
             
             try {
                 const btn = document.getElementById('det-btn-publish');
@@ -2078,8 +2073,26 @@
             document.getElementById('acc-default-cb').checked = true; toggleAccessPanel();
             
             document.getElementById('save-destination-panel').classList.remove('hidden');
-            if(f_currentUser) document.querySelector('input[name="save_dest"][value="cloud"]').checked = true;
-            else document.querySelector('input[name="save_dest"][value="local"]').checked = true;
+            
+            // V39: Bloquear opção de Nuvem se não estiver logado com Google
+            const cloudRadio = document.querySelector('input[name="save_dest"][value="cloud"]');
+            const localRadio = document.querySelector('input[name="save_dest"][value="local"]');
+            const cloudLabel = document.getElementById('label-dest-cloud');
+            const warningEl = document.getElementById('cloud-login-warning');
+
+            if (f_currentUser && !f_currentUser.isAnonymous) {
+                cloudRadio.disabled = false;
+                cloudLabel.classList.remove('opacity-50', 'cursor-not-allowed');
+                cloudLabel.classList.add('cursor-pointer');
+                if (warningEl) warningEl.classList.add('hidden');
+                cloudRadio.checked = true;
+            } else {
+                cloudRadio.disabled = true;
+                cloudLabel.classList.add('opacity-50', 'cursor-not-allowed');
+                cloudLabel.classList.remove('cursor-pointer');
+                if (warningEl) warningEl.classList.remove('hidden');
+                localRadio.checked = true;
+            }
 
             const customContainer = document.getElementById('custom-eq-container');
             if (customContainer) customContainer.innerHTML = '';
@@ -2144,7 +2157,8 @@
             const destPanel = document.getElementById('save-destination-panel');
             let isCloudDest = false;
             if (!destPanel.classList.contains('hidden')) {
-                isCloudDest = document.querySelector('input[name="save_dest"]:checked').value === 'cloud';
+                const cloudRadio = document.querySelector('input[name="save_dest"][value="cloud"]');
+                isCloudDest = cloudRadio && cloudRadio.checked;
             }
             
             const isDefault = document.getElementById('acc-default-cb').checked;
@@ -2189,9 +2203,18 @@
                 }
 
                 if (targetLoc) {
+                    // V40: Proteção JavaScript contra edição forçada
+                    if (targetList === 'cloud' && f_currentUser && !f_currentUser.isAnonymous) {
+                        if (targetLoc.ownerId !== f_currentUser.uid && !isAdmin()) {
+                            alert("Segurança: Você não tem permissão para alterar locais de outros usuários.");
+                            return;
+                        }
+                    }
+
                     targetLoc.name = name; targetLoc.desc = desc; targetLoc.isFavorite = isFavorite;
                     targetLoc.accessData = accessData; targetLoc.price = accessData.price; targetLoc.currency = accessData.currency;
                     targetLoc.equipments = selectedEqs; targetLoc.photos = [...currentPhotosBase64]; targetLoc.links = [...currentLinks];
+                    targetLoc.editedAt = Date.now(); // Adiciona data de edição
                     if (tempLocation) { targetLoc.lat = tempLocation.lat; targetLoc.lng = tempLocation.lng; }
                     
                     if (targetList === 'local') { saveLocalDB(); closeModal('addModal'); }
@@ -2213,9 +2236,12 @@
                     equipments: selectedEqs, photos: [...currentPhotosBase64], links: [...currentLinks], isFavorite: isFavorite, timestamp: Date.now()
                 };
 
-                // V39: Segurança extra para impedir salvamento público se for anônimo
+                // V39/40: Segurança extra para impedir salvamento público se for anônimo + Grava Autor
                 if (isCloudDest && f_currentUser && !f_currentUser.isAnonymous && f_db) {
                     newLoc.ownerId = f_currentUser.uid;
+                    newLoc.ownerName = f_currentUser.displayName || 'Usuário';
+                    newLoc.ownerIsAdmin = isAdmin();
+                    
                     try {
                         const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', newLoc.id);
                         await window.f_setDoc(docRef, newLoc);
@@ -2297,25 +2323,27 @@
 
                 // V40: Renderização discreta de quem adicionou, data e alterações
                 const authorInfoEl = document.getElementById('det-author-info');
-                const dateStr = loc.timestamp ? new Date(loc.timestamp).toLocaleDateString('pt-BR') : '--/--/----';
-                const editStr = loc.editedAt ? `<br>Alterado em ${new Date(loc.editedAt).toLocaleDateString('pt-BR')}` : '';
-                
-                if (loc.isCloud && loc.ownerId) {
-                    const totalCloud = cloudLocations.length;
-                    const userTotal = cloudLocations.filter(l => l.ownerId === loc.ownerId).length;
-                    const authorName = loc.ownerName || 'Usuário';
+                if (authorInfoEl) {
+                    const dateStr = loc.timestamp ? new Date(loc.timestamp).toLocaleDateString('pt-BR') : '--/--/----';
+                    const editStr = loc.editedAt ? `<br>Alterado em ${new Date(loc.editedAt).toLocaleDateString('pt-BR')}` : '';
                     
-                    const nameHtml = loc.ownerIsAdmin 
-                        ? `<span class="text-[#d4af37] font-bold tracking-wide" title="Administrador do Calismap">${authorName} <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline pb-0.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>` 
-                        : `<span class="font-semibold text-gray-600 dark:text-gray-300">${authorName}</span>`;
+                    if (loc.isCloud && loc.ownerId) {
+                        const totalCloud = cloudLocations.length;
+                        const userTotal = cloudLocations.filter(l => l.ownerId === loc.ownerId).length;
+                        const authorName = loc.ownerName || 'Usuário';
+                        
+                        const nameHtml = loc.ownerIsAdmin 
+                            ? `<span class="text-[#d4af37] font-bold tracking-wide" title="Administrador do Calismap">${authorName} <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline pb-0.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>` 
+                            : `<span class="font-semibold text-gray-600 dark:text-gray-300">${authorName}</span>`;
 
-                    authorInfoEl.innerHTML = `Adicionado por ${nameHtml} <span class="opacity-70">(${userTotal} / ${totalCloud})</span> em ${dateStr}${editStr}`;
-                    authorInfoEl.classList.remove('hidden');
-                } else if (!loc.isCloud && !loc.isOnline) {
-                    authorInfoEl.innerHTML = `Salvo no seu celular em ${dateStr}${editStr}`;
-                    authorInfoEl.classList.remove('hidden');
-                } else {
-                    authorInfoEl.classList.add('hidden');
+                        authorInfoEl.innerHTML = `Adicionado por ${nameHtml} <span class="opacity-70">(${userTotal} / ${totalCloud})</span> em ${dateStr}${editStr}`;
+                        authorInfoEl.classList.remove('hidden');
+                    } else if (!loc.isCloud && !loc.isOnline) {
+                        authorInfoEl.innerHTML = `Salvo no seu celular em ${dateStr}${editStr}`;
+                        authorInfoEl.classList.remove('hidden');
+                    } else {
+                        authorInfoEl.classList.add('hidden');
+                    }
                 }
 
                 // V38: Botão de Publicação só aparece se for 100% offline (celular)
