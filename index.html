@@ -2295,6 +2295,29 @@
                     eqs.forEach(eq => { const label = t(eq.id); const cData = CONDITIONS[eq.condition || 0]; const condLabel = t('cond' + (eq.condition || 0)); const extra = eq.desc ? `<span class="text-gray-500 dark:text-gray-400 italic text-[10px] block mt-0.5">- ${eq.desc}</span>` : ''; eqContainer.innerHTML += `<div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700"><div class="flex flex-col"><span class="text-sm font-semibold">${label}</span>${extra}</div><span class="text-[10px] px-1.5 py-0.5 font-bold rounded-full ${cData.badge}">${condLabel}</span></div>`; });
                 } else { eqContainer.innerHTML = `<span class="text-xs text-gray-400">${t('noEq')}</span>`; }
 
+                // V40: Renderização discreta de quem adicionou, data e alterações
+                const authorInfoEl = document.getElementById('det-author-info');
+                const dateStr = loc.timestamp ? new Date(loc.timestamp).toLocaleDateString('pt-BR') : '--/--/----';
+                const editStr = loc.editedAt ? `<br>Alterado em ${new Date(loc.editedAt).toLocaleDateString('pt-BR')}` : '';
+                
+                if (loc.isCloud && loc.ownerId) {
+                    const totalCloud = cloudLocations.length;
+                    const userTotal = cloudLocations.filter(l => l.ownerId === loc.ownerId).length;
+                    const authorName = loc.ownerName || 'Usuário';
+                    
+                    const nameHtml = loc.ownerIsAdmin 
+                        ? `<span class="text-[#d4af37] font-bold tracking-wide" title="Administrador do Calismap">${authorName} <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline pb-0.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>` 
+                        : `<span class="font-semibold text-gray-600 dark:text-gray-300">${authorName}</span>`;
+
+                    authorInfoEl.innerHTML = `Adicionado por ${nameHtml} <span class="opacity-70">(${userTotal} / ${totalCloud})</span> em ${dateStr}${editStr}`;
+                    authorInfoEl.classList.remove('hidden');
+                } else if (!loc.isCloud && !loc.isOnline) {
+                    authorInfoEl.innerHTML = `Salvo no seu celular em ${dateStr}${editStr}`;
+                    authorInfoEl.classList.remove('hidden');
+                } else {
+                    authorInfoEl.classList.add('hidden');
+                }
+
                 // V38: Botão de Publicação só aparece se for 100% offline (celular)
                 if (!loc.isCloud && !loc.isOnline) {
                     btnPublish.classList.remove('hidden');
