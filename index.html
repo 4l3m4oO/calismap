@@ -2133,36 +2133,343 @@
                         const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
                         const maxW = 600; const maxH = 600; let width = img.width; let height = img.height;
                         if (width > height) { if (width > maxW) { height *= maxW / width; width = maxW; } } else { if (height > maxH) { width *= maxH / height; height = maxH; } }
-                        canvas.width = width; canvas.height = height;
-                        ctx.drawImage(img, 0, 0, width, height);
-                        currentPhotosBase64.push(canvas.toDataURL('image/jpeg', 0.8));
-                        renderPhotoPreviews();
-                    };
+                        canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height);
+                        currentPhotosBase64.push(canvas.toDataURL('image/jpeg', 0.5)); renderPhotoPreviews();
+                    }
                     img.src = e.target.result;
-                };
+                }
                 reader.readAsDataURL(file);
             });
             event.target.value = '';
         }
 
         function renderPhotoPreviews() {
-            const container = document.getElementById('photo-preview-container');
-            if (currentPhotosBase64.length === 0) { container.classList.add('hidden'); container.innerHTML = ''; return; }
+            const container = document.getElementById('photo-preview-container'); if (currentPhotosBase64.length === 0) { container.innerHTML = ''; container.classList.add('hidden'); return; }
             container.classList.remove('hidden'); let html = '';
-            currentPhotosBase64.forEach((src, idx) => { html += `<div class="relative w-16 h-16 shrink-0"><img src="${src}" class="w-full h-full object-cover rounded border border-gray-300 dark:border-gray-600"><button type="button" onclick="removePhoto(${idx})" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition shadow"><i data-lucide="x" class="w-3 h-3"></i></button></div>`; });
-            container.innerHTML = html; lucide.createIcons();
+            currentPhotosBase64.forEach((src, idx) => { html += `<div class="relative w-20 h-20 shrink-0"><img src="${src}" class="w-full h-full object-cover rounded-lg border border-gray-300 dark:border-gray-600"><button type="button" onclick="removePhoto(${idx})" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-md"><i data-lucide="x" class="w-3 h-3"></i></button></div>`; }); container.innerHTML = html; lucide.createIcons();
         }
-
         function removePhoto(idx) { currentPhotosBase64.splice(idx, 1); renderPhotoPreviews(); }
 
-        function viewOnMap() { if (!selectedLocationId) return; closeModal('detailsModal'); const loc = locations.find(l => l.id === selectedLocationId) || onlineLocations.find(l => l.id === selectedLocationId); if (loc) { map.flyTo([loc.lat, loc.lng], 16); if (autoRouteEnabled) drawRoute(loc.lat, loc.lng); } }
+        async function saveLocation(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('loc-name').value;
+            const desc = document.getElementById('loc-desc').value;
+            const isFavorite = document.getElementById('loc-fav').checked;
+            
+            const destPanel = document.getElementById('save-destination-panel');
+            let isCloudDest = false;
+            if (!destPanel.classList.contains('hidden')) {
+                const cloudRadio = document.querySelector('input[name="save_dest"][value="cloud"]');
+                isCloudDest = cloudRadio && cloudRadio.checked;
+            }
+            
+            const isDefault = document.getElementById('acc-default-cb').checked;
+            let accessData = { isDefault: true, isFree: true, price: 0, currency: 'BRL', types: ['livre'], restrito: null, particular: null };
+            if (!isDefault) {
+                const isPaid = document.querySelector('input[name="price_type"]:checked').value === 'paid';
+                if (isPaid) { accessData.price = parseFloat(document.getElementById('loc-price').value) || 0; accessData.currency = document.getElementById('loc-currency').value; accessData.isFree = false; } else { accessData.price = 0; accessData.currency = document.getElementById('loc-currency').value; }
+                const isLivre = document.getElementById('acc-livre-cb').checked; const isRestrito = document.getElementById('acc-restrito-cb').checked; const isParticular = document.getElementById('acc-particular-cb').checked;
+                if (!isLivre && !isRestrito && !isParticular && !isPaid) { if (confirm(t('confirmDefaultAccess'))) { accessData.isDefault = true; } else return; } else {
+                    accessData.isDefault = false; accessData.types = [];
+                    if (isLivre) accessData.types.push('livre');
+                    if (isRestrito) {
+                        accessData.types.push('restrito');
+                        const ignoreAge = document.getElementById('ignorar-idade-cb').checked; const ageLimit = document.getElementById('loc-idade').value; const allDays = document.getElementById('todos-dias-cb').checked; const fixedSched = document.getElementById('loc-horario-fixo').value; const detSched = document.getElementById('loc-horario-detalhado').value;
+                        if (!ignoreAge && !ageLimit && !fixedSched && !detSched) { alert(t('errRestricted')); return; }
+                        accessData.restrito = { ignoreAge: ignoreAge, ageLimit: ignoreAge ? null : ageLimit, allDays: allDays, schedule: allDays ? fixedSched : detSched };
+                    }
+                    if (isParticular) { accessData.types.push('particular'); accessData.particular = { info: document.getElementById('loc-part-info').value, phonePrefix: document.getElementById('loc-phone-prefix').value, phone: document.getElementById('loc-phone').value }; }
+                }
+            }
+            
+            const selectedEqs = [];
+            [...CORE_EQUIPS, ...EXTRA_EQUIPS].forEach(eqId => { const cb = document.getElementById(`cb-eq-${eqId}`); if(cb && cb.checked) { const cond = document.getElementById(`eq-cond-${eqId}`).value; const item = { id: eqId, condition: parseInt(cond) }; selectedEqs.push(item); } });
+            const customContainer = document.getElementById('custom-eq-container');
+            if (customContainer) {
+                Array.from(customContainer.children).forEach(wrapper => {
+                    const idStr = wrapper.id.replace('wrapper-', ''); const nameInput = document.getElementById(`name-${idStr}`); const condSelect = document.getElementById(`cond-${idStr}`);
+                    if (nameInput && nameInput.value.trim() !== '') { selectedEqs.push({ id: 'outros', condition: parseInt(condSelect.value), desc: nameInput.value.trim() }); }
+                });
+            }
 
-        function openFullScreen(index) { currentFsIndex = index; const modal = document.getElementById('fullscreenImgModal'); document.getElementById('fs-img').src = currentDetailPhotos[currentFsIndex]; document.getElementById('fs-counter').innerText = `${currentFsIndex + 1} / ${currentDetailPhotos.length}`; modal.classList.remove('hidden'); modal.classList.add('flex'); setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('fs-img').classList.remove('scale-95'); document.getElementById('fs-img').classList.add('scale-100'); }, 10); const prevBtn = document.getElementById('fs-prev-btn'); const nextBtn = document.getElementById('fs-next-btn'); if (currentDetailPhotos.length > 1) { prevBtn.classList.remove('hidden'); nextBtn.classList.remove('hidden'); } else { prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); } lucide.createIcons(); }
-        function updateFullScreenView() { document.getElementById('fs-img').src = currentDetailPhotos[currentFsIndex]; document.getElementById('fs-counter').innerText = `${currentFsIndex + 1} / ${currentDetailPhotos.length}`; const prevBtn = document.getElementById('fs-prev-btn'); const nextBtn = document.getElementById('fs-next-btn'); if (currentDetailPhotos.length > 1) { prevBtn.classList.remove('hidden'); nextBtn.classList.remove('hidden'); } else { prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); } lucide.createIcons(); }
+            const editId = document.getElementById('add-form').dataset.editId;
+            let targetLoc = null;
+            let targetList = '';
+
+            if (editId && editId.startsWith('loc_')) {
+                let idx = localLocations.findIndex(l => l.id === editId);
+                if (idx !== -1) { targetLoc = localLocations[idx]; targetList = 'local'; }
+                else {
+                    idx = cloudLocations.findIndex(l => l.id === editId);
+                    if (idx !== -1) { targetLoc = cloudLocations[idx]; targetList = 'cloud'; }
+                }
+
+                if (targetLoc) {
+                    // V40: Proteção JavaScript contra edição forçada
+                    if (targetList === 'cloud' && f_currentUser && !f_currentUser.isAnonymous) {
+                        if (targetLoc.ownerId !== f_currentUser.uid && !isAdmin()) {
+                            alert("Segurança: Você não tem permissão para alterar locais de outros usuários.");
+                            return;
+                        }
+                    }
+
+                    targetLoc.name = name; targetLoc.desc = desc; targetLoc.isFavorite = isFavorite;
+                    targetLoc.accessData = accessData; targetLoc.price = accessData.price; targetLoc.currency = accessData.currency;
+                    targetLoc.equipments = selectedEqs; targetLoc.photos = [...currentPhotosBase64]; targetLoc.links = [...currentLinks];
+                    targetLoc.editedAt = Date.now(); // Adiciona data de edição
+                    if (tempLocation) { targetLoc.lat = tempLocation.lat; targetLoc.lng = tempLocation.lng; }
+                    
+                    if (targetList === 'local') { saveLocalDB(); closeModal('addModal'); }
+                    else if (targetList === 'cloud' && f_currentUser) {
+                        try {
+                            const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', targetLoc.id);
+                            await window.f_setDoc(docRef, targetLoc);
+                            closeModal('addModal');
+                        } catch(e) { alert("Erro ao atualizar na nuvem."); }
+                    }
+                }
+            } else {
+                let lat, lng;
+                if (tempLocation) { lat = tempLocation.lat; lng = tempLocation.lng; } else if (userLocation) { lat = userLocation.lat; lng = userLocation.lng; } else { const center = map.getCenter(); lat = center.lat; lng = center.lng; }
+                const locId = 'loc_' + Date.now() + Math.floor(Math.random() * 1000);
+                
+                const newLoc = {
+                    id: locId, name, desc, lat, lng, accessData: accessData, price: accessData.price, currency: accessData.currency,
+                    equipments: selectedEqs, photos: [...currentPhotosBase64], links: [...currentLinks], isFavorite: isFavorite, timestamp: Date.now()
+                };
+
+                // V39/40: Segurança extra para impedir salvamento público se for anônimo + Grava Autor
+                if (isCloudDest && f_currentUser && !f_currentUser.isAnonymous && f_db) {
+                    newLoc.ownerId = f_currentUser.uid;
+                    newLoc.ownerName = f_currentUser.displayName || 'Usuário';
+                    newLoc.ownerIsAdmin = isAdmin();
+                    
+                    try {
+                        const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', newLoc.id);
+                        await window.f_setDoc(docRef, newLoc);
+                        closeModal('addModal');
+                    } catch(e) { alert("Erro ao salvar na nuvem (o local pode ter muitas fotos). Salvando offline..."); localLocations.push(newLoc); saveLocalDB(); closeModal('addModal'); }
+                } else {
+                    localLocations.push(newLoc);
+                    saveLocalDB();
+                    closeModal('addModal');
+                }
+            }
+        }
+
+        // --- DETAILS ---
+        function openDetails(id) {
+            const loc = locations.find(l => l.id === id) || onlineLocations.find(l => l.id === id);
+            if (!loc) return;
+            selectedLocationId = id;
+
+            if(markerMap[id]) map.setView([loc.lat, loc.lng]);
+
+            document.getElementById('det-title').innerText = loc.name;
+            document.getElementById('det-desc').innerText = loc.desc || t('noDesc');
+            
+            const linksContainer = document.getElementById('det-links');
+            if (loc.links && loc.links.length > 0) { const linksHtml = loc.links.map(l => `<a href="${l.url}" target="_blank" class="text-indigo-500 dark:text-indigo-400 hover:underline font-semibold">${l.platform}</a>`).join(', '); linksContainer.innerHTML = `<strong>${t('extraContent')}:</strong> ${linksHtml}`; linksContainer.classList.remove('hidden'); } else { linksContainer.innerHTML = ''; linksContainer.classList.add('hidden'); }
+            
+            const photoContainer = document.getElementById('det-img-container'); const noImgEl = document.getElementById('det-no-img'); const counterEl = document.getElementById('det-img-counter'); photoContainer.innerHTML = '';
+            
+            const favIcon = document.getElementById('det-fav-icon');
+            if(loc.isFavorite && !loc.isOnline) { favIcon.classList.add('fill-pink-500', 'text-pink-500'); favIcon.classList.remove('text-gray-300'); } else { favIcon.classList.remove('fill-pink-500', 'text-pink-500'); favIcon.classList.add('text-gray-300'); }
+
+            const locPhotos = loc.photos || (loc.photo ? [loc.photo] : []); currentDetailPhotos = locPhotos;
+            if (locPhotos.length > 0) {
+                noImgEl.classList.add('hidden'); locPhotos.forEach((src, idx) => { photoContainer.innerHTML += `<img src="${src}" onclick="openFullScreen(${idx})" class="w-full h-full object-cover shrink-0 snap-center cursor-pointer hover:opacity-90 transition" style="min-width: 100%;">`; });
+                if(locPhotos.length > 1) { counterEl.classList.remove('hidden'); counterEl.innerText = `1 / ${locPhotos.length}`; } else counterEl.classList.add('hidden');
+            } else { noImgEl.classList.remove('hidden'); counterEl.classList.add('hidden'); }
+
+            const badgeContainer = document.getElementById('det-badges-container'); const extraInfoContainer = document.getElementById('det-extra-info'); const eqContainer = document.getElementById('det-equips');
+            
+            const actionOwner = document.getElementById('det-owner-actions');
+            const actionWeb = document.getElementById('det-web-actions');
+            const btnDel = document.getElementById('det-btn-del');
+            const btnEdit = document.getElementById('det-btn-edit');
+            const btnPublish = document.getElementById('det-btn-publish');
+            
+            badgeContainer.innerHTML = ''; extraInfoContainer.innerHTML = ''; extraInfoContainer.classList.add('hidden');
+            actionOwner.classList.add('hidden'); actionWeb.classList.add('hidden'); btnDel.classList.add('hidden'); btnPublish.classList.add('hidden');
+
+            if (loc.isOnline) {
+                badgeContainer.innerHTML = `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200"><i data-lucide="globe" class="w-3 h-3 inline"></i> ${t('internetLoc')}</span>`;
+                eqContainer.innerHTML = `<span class="text-xs text-gray-400 italic">${t('internetEqMsg')}</span>`;
+                actionWeb.classList.remove('hidden');
+            } else {
+                const eqs = normalizeEqs(loc.equipments); const avgCond = getAverageCondition(eqs); const avgData = CONDITIONS[avgCond];
+                
+                if (loc.isCloud) badgeContainer.innerHTML += `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200" title="Nuvem Compartilhada"><i data-lucide="cloud" class="w-3 h-3 inline"></i> Nuvem</span>`;
+                else badgeContainer.innerHTML += `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-300 dark:border-gray-700" title="Apenas seu Celular"><i data-lucide="smartphone" class="w-3 h-3 inline"></i> Celular</span>`;
+
+                badgeContainer.innerHTML += `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase ${avgData.badge}">${t('state')}: ${t('cond'+avgCond)}</span>`;
+
+                let isFree = true; if (loc.accessData && loc.accessData.isFree === false) isFree = false; else if (!loc.accessData && (parseFloat(loc.price) || 0) > 0) isFree = false;
+                if (isFree) { badgeContainer.innerHTML += `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">${t('priceFree')}</span>`; } else { badgeContainer.innerHTML += `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300">${formatPrice(loc)}</span>`; }
+
+                if (loc.accessData && loc.accessData.types) {
+                    if (loc.accessData.types.includes('livre')) badgeContainer.innerHTML += `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">${t('accLivre')}</span>`;
+                    if (loc.accessData.types.includes('restrito')) badgeContainer.innerHTML += `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">${t('accRestrito')}</span>`;
+                    if (loc.accessData.types.includes('particular')) badgeContainer.innerHTML += `<span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">${t('accParticular')}</span>`;
+                    let extraHTML = '';
+                    if (loc.accessData.restrito) { if (loc.accessData.restrito.ageLimit) extraHTML += `<p><span class="font-bold">Idade:</span> +${loc.accessData.restrito.ageLimit} anos</p>`; if (loc.accessData.restrito.schedule) extraHTML += `<p><span class="font-bold">Horário:</span> ${loc.accessData.restrito.schedule}</p>`; }
+                    if (loc.accessData.particular) { if (loc.accessData.particular.info) extraHTML += `<p><span class="font-bold">Info:</span> ${loc.accessData.particular.info}</p>`; if (loc.accessData.particular.phone) { const fullPhone = `${loc.accessData.particular.phonePrefix} ${loc.accessData.particular.phone}`; const b64Phone = btoa(fullPhone); extraHTML += `<button onclick="copyProtectedPhone('${b64Phone}')" class="mt-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 font-bold py-1.5 px-3 rounded text-[10px] flex items-center justify-center gap-1 transition w-max"><i data-lucide="copy" class="w-3 h-3"></i> ${t('copyPhoneBtn')}</button>`; } }
+                    if (extraHTML !== '') { extraInfoContainer.innerHTML = extraHTML; extraInfoContainer.classList.remove('hidden'); }
+                }
+
+                eqContainer.innerHTML = '';
+                if (eqs.length > 0) {
+                    eqs.forEach(eq => { const label = t(eq.id); const cData = CONDITIONS[eq.condition || 0]; const condLabel = t('cond' + (eq.condition || 0)); const extra = eq.desc ? `<span class="text-gray-500 dark:text-gray-400 italic text-[10px] block mt-0.5">- ${eq.desc}</span>` : ''; eqContainer.innerHTML += `<div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700"><div class="flex flex-col"><span class="text-sm font-semibold">${label}</span>${extra}</div><span class="text-[10px] px-1.5 py-0.5 font-bold rounded-full ${cData.badge}">${condLabel}</span></div>`; });
+                } else { eqContainer.innerHTML = `<span class="text-xs text-gray-400">${t('noEq')}</span>`; }
+
+                // V40/V41: Renderização discreta de quem adicionou, data e alterações
+                const authorInfoEl = document.getElementById('det-author-info');
+                if (authorInfoEl) {
+                    const dateStr = loc.timestamp ? new Date(loc.timestamp).toLocaleDateString('pt-BR') : '--/--/----';
+                    const editStr = loc.editedAt ? `<br>Alterado em ${new Date(loc.editedAt).toLocaleDateString('pt-BR')}` : '';
+                    
+                    if (loc.isCloud && loc.ownerId) {
+                        const totalCloud = cloudLocations.length;
+                        const userTotal = cloudLocations.filter(l => l.ownerId === loc.ownerId).length;
+                        
+                        let isLocAdmin = loc.ownerIsAdmin;
+                        let authorName = loc.ownerName || 'Usuário';
+                        
+                        // Correção para forçar visual de admin nos cards antigos seus que estavam sem nome
+                        if (f_currentUser && loc.ownerId === f_currentUser.uid && isAdmin()) {
+                            isLocAdmin = true;
+                            if (!loc.ownerName) authorName = f_currentUser.displayName || 'Administrador';
+                        }
+                        
+                        const nameHtml = isLocAdmin 
+                            ? `<span class="text-[#d4af37] font-bold tracking-wide" title="Administrador do Calismap">${authorName} <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline pb-0.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>` 
+                            : `<span class="font-semibold text-gray-600 dark:text-gray-300">${authorName}</span>`;
+
+                        authorInfoEl.innerHTML = `Adicionado por ${nameHtml} <span class="opacity-70">(${userTotal} / ${totalCloud})</span> em ${dateStr}${editStr}`;
+                        authorInfoEl.classList.remove('hidden');
+                    } else if (!loc.isCloud && !loc.isOnline) {
+                        authorInfoEl.innerHTML = `Salvo no seu celular em ${dateStr}${editStr}`;
+                        authorInfoEl.classList.remove('hidden');
+                    } else {
+                        authorInfoEl.classList.add('hidden');
+                    }
+                }
+
+                // V38: Botão de Publicação só aparece se for 100% offline (celular)
+                if (!loc.isCloud && !loc.isOnline) {
+                    btnPublish.classList.remove('hidden');
+                }
+
+                const isOwner = loc.isCloud ? (f_currentUser && loc.ownerId === f_currentUser.uid) : true;
+                actionOwner.classList.remove('hidden');
+                
+                if (isOwner || isAdmin()) { // Administradores sempre podem editar locais da nuvem
+                    btnEdit.classList.remove('hidden');
+                    btnDel.classList.remove('hidden');
+                    actionOwner.classList.remove('grid-cols-1');
+                    actionOwner.classList.add('grid-cols-2');
+                } else {
+                    btnEdit.classList.add('hidden');
+                    btnDel.classList.add('hidden');
+                    actionOwner.classList.remove('grid-cols-2');
+                    actionOwner.classList.add('grid-cols-1');
+                }
+            }
+
+            let dist = 0; if (userLocation) {
+                dist = calculateDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng); document.getElementById('det-dist').innerText = formatDistance(dist);
+                const wMin = dist * 12; const rMin = dist * 7.5; const bMin = dist * 4; const cMin = dist * 1.5;
+                document.getElementById('det-walk-time').innerText = getETAString(wMin); document.getElementById('det-walk-cal').innerText = Math.round(dist * 50) + ' kcal'; document.getElementById('det-walk-arr').innerText = `${t('arrival')}: ${getArrivalTime(wMin)}`;
+                document.getElementById('det-run-time').innerText = getETAString(rMin); document.getElementById('det-run-cal').innerText = Math.round(dist * 70) + ' kcal'; document.getElementById('det-run-arr').innerText = `${t('arrival')}: ${getArrivalTime(rMin)}`;
+                document.getElementById('det-bike-time').innerText = getETAString(bMin); document.getElementById('det-bike-cal').innerText = Math.round(dist * 30) + ' kcal'; document.getElementById('det-bike-arr').innerText = `${t('arrival')}: ${getArrivalTime(bMin)}`;
+                document.getElementById('det-car-time').innerText = getETAString(cMin); document.getElementById('det-car-arr').innerText = `${t('arrival')}: ${getArrivalTime(cMin)}`;
+                const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${loc.lat},${loc.lng}&travelmode=walking`; document.getElementById('det-route-btn').href = gmapsUrl;
+            } else {
+                document.getElementById('det-dist').innerText = '? km'; ['walk', 'run', 'bike', 'car'].forEach(m => { document.getElementById(`det-${m}-time`).innerText = '--'; if(m !== 'car') document.getElementById(`det-${m}-cal`).innerText = '-- kcal'; document.getElementById(`det-${m}-arr`).innerText = `${t('arrival')}: --`; });
+                const gmapsFallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`; document.getElementById('det-route-btn').href = gmapsFallbackUrl;
+            }
+
+            document.getElementById('det-route-btn').classList.remove('opacity-50', 'pointer-events-none');
+            const wazeUrl = `https://waze.com/ul?ll=${loc.lat},${loc.lng}&navigate=yes`; document.getElementById('det-route-waze-btn').href = wazeUrl; document.getElementById('det-route-waze-btn').classList.remove('opacity-50', 'pointer-events-none');
+            if (autoRouteEnabled) drawRoute(loc.lat, loc.lng); else clearRoute();
+
+            lucide.createIcons(); openModal('detailsModal');
+        }
+
+        function editLocationBtn() {
+            if(!selectedLocationId) return;
+            closeModal('detailsModal');
+            const loc = locations.find(l => l.id === selectedLocationId) || onlineLocations.find(l => l.id === selectedLocationId);
+            if(!loc) return;
+            
+            document.getElementById('save-destination-panel').classList.add('hidden'); 
+
+            document.getElementById('loc-name').value = loc.name;
+            document.getElementById('loc-desc').value = loc.desc || '';
+            document.getElementById('loc-fav').checked = loc.isFavorite || false;
+            
+            if (loc.accessData) {
+                document.getElementById('acc-default-cb').checked = loc.accessData.isDefault; toggleAccessPanel();
+                if (!loc.accessData.isDefault) {
+                    if (loc.accessData.isFree === false) { document.querySelector('input[name="price_type"][value="paid"]').checked = true; document.getElementById('loc-price').value = loc.accessData.price || ''; } else { document.querySelector('input[name="price_type"][value="free"]').checked = true; }
+                    togglePriceInput(); document.getElementById('loc-currency').value = loc.accessData.currency || 'BRL'; updatePricePreview();
+                    document.getElementById('acc-livre-cb').checked = (loc.accessData.types && loc.accessData.types.includes('livre'));
+                    document.getElementById('acc-restrito-cb').checked = (loc.accessData.types && loc.accessData.types.includes('restrito')); toggleRestritoPanel();
+                    if (loc.accessData.restrito) { document.getElementById('ignorar-idade-cb').checked = loc.accessData.restrito.ignoreAge; toggleIdadeInput(); if (!loc.accessData.restrito.ignoreAge) document.getElementById('loc-idade').value = loc.accessData.restrito.ageLimit || ''; document.getElementById('todos-dias-cb').checked = loc.accessData.restrito.allDays; toggleHorarioInput(); if (loc.accessData.restrito.allDays) document.getElementById('loc-horario-fixo').value = loc.accessData.restrito.schedule || ''; else document.getElementById('loc-horario-detalhado').value = loc.accessData.restrito.schedule || ''; }
+                    document.getElementById('acc-particular-cb').checked = (loc.accessData.types && loc.accessData.types.includes('particular')); toggleParticularPanel();
+                    if (loc.accessData.particular) { document.getElementById('loc-part-info').value = loc.accessData.particular.info || ''; if (loc.accessData.particular.info) document.getElementById('part-info-container').classList.remove('hidden'); document.getElementById('loc-phone-prefix').value = loc.accessData.particular.phonePrefix || '+55'; document.getElementById('loc-phone').value = loc.accessData.particular.phone || ''; if (loc.accessData.particular.phone) document.getElementById('part-phone-container').classList.remove('hidden'); }
+                }
+            } else {
+                document.getElementById('acc-default-cb').checked = true; toggleAccessPanel();
+                if (loc.price > 0) { document.getElementById('acc-default-cb').checked = false; toggleAccessPanel(); document.querySelector('input[name="price_type"][value="paid"]').checked = true; togglePriceInput(); document.getElementById('loc-price').value = loc.price; document.getElementById('loc-currency').value = loc.currency || 'BRL'; updatePricePreview(); }
+            }
+            
+            currentPhotosBase64 = [...(loc.photos || (loc.photo ? [loc.photo] : []))]; currentLinks = [...(loc.links || [])]; renderPhotoPreviews(); renderLinkPreviews();
+            document.querySelectorAll('.form-eq-cb').forEach(cb => { cb.checked = false; toggleEqForm(cb.value); });
+            const customContainer = document.getElementById('custom-eq-container'); if (customContainer) customContainer.innerHTML = ''; customEqCounter = 0; let hasExtraEq = false;
+            
+            if (!loc.isOnline) {
+                const eqs = normalizeEqs(loc.equipments);
+                eqs.forEach(eq => { if (eq.id === 'outros') { addCustomEq(eq.desc, eq.condition); } else { const cb = document.getElementById(`cb-eq-${eq.id}`); if(cb) { cb.checked = true; toggleEqForm(eq.id); document.getElementById(`eq-cond-${eq.id}`).value = eq.condition || 0; if (EXTRA_EQUIPS.includes(eq.id)) hasExtraEq = true; } } });
+                toggleExtraEqs(hasExtraEq);
+                document.getElementById('addModalTitle').innerText = t('editLocation'); document.getElementById('addModalBtnText').innerText = t('updateBtn'); document.getElementById('add-form').dataset.editId = loc.id;
+            } else {
+                document.getElementById('save-destination-panel').classList.remove('hidden');
+                toggleExtraEqs(false); document.getElementById('addModalTitle').innerText = t('saveWebLocation'); document.getElementById('addModalBtnText').innerText = t('saveWebBtn'); document.getElementById('add-form').removeAttribute('data-edit-id'); 
+            }
+            
+            tempLocation = { lat: loc.lat, lng: loc.lng }; document.getElementById('loc-status').innerText = t('keepOriginal'); openModal('addModal');
+        }
+
+        function viewOnMap() { if(!selectedLocationId) return; closeModal('detailsModal'); const loc = locations.find(l => l.id === selectedLocationId) || onlineLocations.find(l => l.id === selectedLocationId); if(loc && markerMap[selectedLocationId]) { map.flyTo([loc.lat, loc.lng], 16, { duration: 0.5 }); setTimeout(() => { markerMap[selectedLocationId].openPopup(); }, 550); if (!autoRouteEnabled) drawRoute(loc.lat, loc.lng); } }
+
+        async function deleteLocation() {
+            if(!selectedLocationId) return;
+            if(confirm(t('confirmDelete'))) {
+                const loc = locations.find(l => l.id === selectedLocationId);
+                if (loc) {
+                    if (loc.isCloud && f_db) {
+                        try {
+                            const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', loc.id);
+                            await window.f_deleteDoc(docRef);
+                        } catch (e) { alert("Falha ao excluir na nuvem."); }
+                    } else {
+                        localLocations = localLocations.filter(l => l.id !== selectedLocationId);
+                        saveLocalDB();
+                    }
+                }
+                closeModal('detailsModal'); 
+            }
+        }
+
+        // --- FULLSCREEN IMAGE LOGIC ---
+        function openFullScreen(index) { if (!currentDetailPhotos || currentDetailPhotos.length === 0) return; currentFsIndex = index; const modal = document.getElementById('fullscreenImgModal'); modal.classList.remove('hidden'); modal.classList.add('flex'); requestAnimationFrame(() => { modal.classList.remove('opacity-0'); document.getElementById('fs-img').classList.remove('scale-95'); document.getElementById('fs-img').classList.add('scale-100'); }); updateFullScreenView(); }
+        function updateFullScreenView() { const img = document.getElementById('fs-img'); img.src = currentDetailPhotos[currentFsIndex]; document.getElementById('fs-counter').innerText = `${currentFsIndex + 1} / ${currentDetailPhotos.length}`; const prevBtn = document.getElementById('fs-prev-btn'); const nextBtn = document.getElementById('fs-next-btn'); if (currentDetailPhotos.length > 1) { prevBtn.classList.remove('hidden'); nextBtn.classList.remove('hidden'); } else { prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); } lucide.createIcons(); }
         function closeFullScreen() { const modal = document.getElementById('fullscreenImgModal'); modal.classList.add('opacity-0'); document.getElementById('fs-img').classList.remove('scale-100'); document.getElementById('fs-img').classList.add('scale-95'); setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); document.getElementById('fs-img').src = ''; }, 300); }
         function prevFullScreen() { if (currentDetailPhotos.length <= 1) return; currentFsIndex = (currentFsIndex - 1 + currentDetailPhotos.length) % currentDetailPhotos.length; updateFullScreenView(); }
         function nextFullScreen() { if (currentDetailPhotos.length <= 1) return; currentFsIndex = (currentFsIndex + 1) % currentDetailPhotos.length; updateFullScreenView(); }
-        
         document.addEventListener('keydown', (e) => { const fsModal = document.getElementById('fullscreenImgModal'); if (fsModal && !fsModal.classList.contains('hidden')) { if (e.key === 'Escape') closeFullScreen(); else if (e.key === 'ArrowRight') nextFullScreen(); else if (e.key === 'ArrowLeft') prevFullScreen(); } });
 
     </script>
