@@ -187,6 +187,15 @@
                             <input type="checkbox" id="filter-db-local" checked onchange="renderCatalog()" class="w-4 h-4 accent-gray-600 rounded"> <i data-lucide="smartphone" class="w-4 h-4"></i> <span data-i18n="dbLocal">Meu Celular (Privado)</span>
                         </label>
                     </div>
+
+                    <span class="text-xs font-bold uppercase text-gray-500 mt-2">Visibilidade</span>
+                    <div class="flex flex-wrap gap-1.5 text-sm">
+                        <label class="inline-flex items-center gap-1 cursor-pointer bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded-full text-xs hover:bg-gray-300 dark:hover:bg-gray-700 transition">
+                            <input type="checkbox" id="filter-hidden-cb" onchange="toggleHiddenFilter()" class="hidden peer">
+                            <i data-lucide="eye-off" class="w-3.5 h-3.5 peer-checked:text-indigo-500"></i> <span data-i18n="hiddenOnly">Somente Ocultos</span>
+                        </label>
+                        <button onclick="restoreAllHidden()" id="btn-restore-hidden" class="hidden text-xs bg-indigo-100 text-indigo-600 px-2 py-1 rounded-full hover:bg-indigo-200 transition" data-i18n="restoreAllHidden">Restaurar Ocultos</button>
+                    </div>
                     
                     <div class="flex items-center justify-between mt-2">
                         <span data-i18n="filterEq" class="text-xs font-bold uppercase text-gray-500">Equipamentos</span>
@@ -274,7 +283,6 @@
             <div class="p-4 overflow-y-auto flex-1 custom-scrollbar">
                 <form id="add-form" onsubmit="saveLocation(event)" class="space-y-4">
                     
-                    <!-- Opção de Salvar na Nuvem ou Local (V39 - Com Trava de Segurança) -->
                     <div id="save-destination-panel" class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                         <label class="block text-sm font-bold text-blue-800 dark:text-blue-300 mb-2" data-i18n="saveDestLabel">Onde deseja salvar este local?</label>
                         <div class="flex flex-col gap-2">
@@ -469,6 +477,9 @@
                     <div class="flex-1">
                         <div class="flex items-center gap-2">
                             <h3 id="det-title" class="text-2xl font-bold">Nome</h3>
+                            <button id="det-btn-hide" onclick="toggleHideFromDetails()" title="Ocultar/Mostrar" class="text-gray-300 hover:text-gray-500 transition outline-none ml-2">
+                                <i data-lucide="eye-off" id="det-hide-icon" class="w-5 h-5"></i>
+                            </button>
                             <button id="det-btn-fav" onclick="toggleFavorite()" title="Favoritar" class="text-gray-300 hover:text-pink-500 transition outline-none">
                                 <i data-lucide="heart" id="det-fav-icon" class="w-6 h-6"></i>
                             </button>
@@ -516,25 +527,24 @@
                     </div>
                 </div>
 
-                <!-- Botão Publicar para Comunidade (Aparece só em locais privados) -->
                 <button id="det-btn-publish" onclick="publishSingleToCloud()" class="w-full bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm hidden mb-2 shadow-sm border border-blue-200 dark:border-blue-800">
                     <i data-lucide="cloud-upload" class="w-4 h-4"></i> <span data-i18n="btnPublishCloud">Publicar na Comunidade</span>
                 </button>
 
-                <!-- V40: Info do Autor / Data -->
                 <div id="det-author-info" class="text-[10px] text-gray-500 dark:text-gray-400 mt-3 mb-3 text-center hidden"></div>
 
-                <!-- Botões Edit/Del renderizados por JS (depende se é dono) -->
                 <div id="det-owner-actions" class="grid grid-cols-2 gap-2 mb-2 hidden">
                     <button id="det-btn-edit" onclick="editLocationBtn()" class="w-full bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
                         <i data-lucide="edit-2" class="w-4 h-4"></i> <span data-i18n="btnEdit">Editar</span>
+                    </button>
+                    <button id="det-btn-clone" onclick="cloneToLocal()" class="w-full bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm hidden">
+                        <i data-lucide="copy" class="w-4 h-4"></i> <span data-i18n="cloneLocal">Salvar Localmente</span>
                     </button>
                     <button id="det-btn-exp" onclick="exportSingleLocation()" class="w-full bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
                         <i data-lucide="download" class="w-4 h-4"></i> <span data-i18n="btnExport">Exportar</span>
                     </button>
                 </div>
                 
-                <!-- Para locais da web aberta, o botão de salvar fica aqui -->
                 <div id="det-web-actions" class="mb-2 hidden">
                     <button id="det-btn-web-save" onclick="editLocationBtn()" class="w-full bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:bg-indigo-900/40 font-bold py-2.5 rounded-lg transition flex items-center justify-center gap-2 text-sm">
                         <i data-lucide="download-cloud" class="w-4 h-4"></i> <span data-i18n="saveMyList">Salvar na minha Lista</span>
@@ -555,6 +565,11 @@
                         Waze
                     </a>
                 </div>
+                
+                <button id="det-btn-report" onclick="reportLocation()" class="w-full mt-3 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 font-bold py-2 rounded-lg transition text-xs flex justify-center items-center gap-1" data-i18n="reportLoc">
+                    <i data-lucide="flag" class="w-3 h-3"></i> Reportar Problema
+                </button>
+                
                 <button id="det-btn-del" onclick="deleteLocation()" class="w-full mt-2 bg-red-100 dark:bg-red-900/20 text-red-600 hover:bg-red-200 dark:hover:bg-red-900/40 font-bold py-2 rounded-lg transition text-sm hidden" data-i18n="btnRemove">
                     Remover Local
                 </button>
@@ -580,6 +595,10 @@
                 <div id="admin-db-section" class="hidden flex-col gap-3 mb-2 pb-3 border-b border-gray-200 dark:border-gray-700">
                     <span class="text-[10px] font-bold uppercase text-red-500 flex items-center gap-1"><i data-lucide="shield-alert" class="w-3 h-3"></i> <span data-i18n="adminPanel">Administrador (Nuvem)</span></span>
                     
+                    <button onclick="viewReports()" class="w-full bg-red-600 text-white hover:bg-red-700 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2 shadow-sm">
+                        <i data-lucide="flag" class="w-5 h-5"></i> <span data-i18n="adminReports">Ver Denúncias</span>
+                    </button>
+
                     <button onclick="syncLocalToCloud()" class="w-full bg-blue-600 text-white hover:bg-blue-700 font-bold py-3 rounded-lg transition flex items-center justify-center gap-2 shadow-sm">
                         <i data-lucide="cloud-lightning" class="w-5 h-5"></i> <span data-i18n="btnSyncCloud">Sincronizar Celular -> Nuvem</span>
                     </button>
@@ -648,6 +667,19 @@
                 <i data-lucide="loader-2" class="w-8 h-8 text-indigo-500 animate-spin mb-2"></i>
                 <p id="import-progress-text" class="text-sm font-bold text-gray-700 dark:text-gray-300 text-center" data-i18n="processing">A processar...</p>
                 <p class="text-[10px] text-gray-500 mt-1 text-center" data-i18n="processingHelp">Isto pode demorar um pouco, pois estamos a procurar as coordenadas de cada local na internet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Admin Modal -->
+    <div id="reportsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[110] p-4">
+        <div class="bg-white dark:bg-darkcard rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
+                <h3 class="text-lg font-bold flex items-center gap-2 text-red-600" data-i18n="adminReports"><i data-lucide="flag" class="w-5 h-5"></i> Painel de Denúncias</h3>
+                <button onclick="closeModal('reportsModal')" class="text-gray-500 hover:text-gray-800 dark:hover:text-white"><i data-lucide="x"></i></button>
+            </div>
+            <div id="reports-container" class="p-4 overflow-y-auto flex-1 custom-scrollbar space-y-3">
+                <!-- Injetado via JS -->
             </div>
         </div>
     </div>
@@ -915,6 +947,23 @@
                 btnConfirmReplace: "Selecionar Arquivo e Substituir",
                 btnConfirmWait: "Confirmar",
                 favHelpWeb: "Para favoritar este local da internet, clique em 'Salvar na minha Lista' abaixo.",
+                
+                cloneLocal: "Salvar Localmente",
+                cloneSuccess: "Local salvo com sucesso no seu celular. Agora você pode editá-lo livremente.",
+                hideLoc: "Ocultar Local",
+                unhideLoc: "Mostrar Local",
+                hiddenOnly: "Somente Ocultos",
+                restoreAllHidden: "Restaurar Ocultos",
+                reportLoc: "Reportar Problema",
+                reportReason: "Motivo da denúncia (Ex: Não existe, Duplicado, Erro, etc):",
+                reportSuccess: "Denúncia enviada com sucesso! Obrigado por ajudar a manter o mapa limpo.",
+                errProximity: "Atenção: Já existe um local salvo a menos de 20 metros de distância. Para evitar duplicatas, não é possível criar este local na nuvem. Verifique no mapa se o local já existe.",
+                adminReports: "Painel de Denúncias",
+                noReports: "Nenhuma denúncia no momento.",
+                btnViewLoc: "Ver Local",
+                btnDelLoc: "Excluir Local",
+                btnDiscard: "Descartar",
+
                 pullup_all: "Barra Fixa (Todas)", pullup_high: "Barra Fixa Alta", pullup_med: "Barra Fixa Média", pullup_low: "Barra Fixa Baixa", parallel_bars: "Barra Paralela", push_up_bar: "Push Up Bar", monkey_bar: "Monkey Bar", rings: "Argolas", ladder: "Espaldar", ab_bench: "Prancha Abdominal", outros: "Outros (Especificar)",
                 cond6: "Excelente", cond5: "Ótimo", cond4: "Bom", cond3: "Mediano", cond2: "Ruim", cond1: "Péssimo", cond0: "Não informado"
             },
@@ -1084,6 +1133,23 @@
                 btnConfirmReplace: "Select File and Replace",
                 btnConfirmWait: "Confirm",
                 favHelpWeb: "To favorite this internet location, click 'Save to my List' below.",
+                
+                cloneLocal: "Save Locally",
+                cloneSuccess: "Location successfully saved to your phone. You can now edit it freely.",
+                hideLoc: "Hide Location",
+                unhideLoc: "Unhide Location",
+                hiddenOnly: "Hidden Only",
+                restoreAllHidden: "Restore Hidden",
+                reportLoc: "Report Problem",
+                reportReason: "Reason for report (e.g., Doesn't exist, Duplicate, Error):",
+                reportSuccess: "Report sent successfully! Thank you for helping keep the map clean.",
+                errProximity: "Attention: There is already a saved location less than 20 meters away. To avoid duplicates, you cannot create this location in the cloud. Check the map to see if it already exists.",
+                adminReports: "Reports Panel",
+                noReports: "No reports at the moment.",
+                btnViewLoc: "View Location",
+                btnDelLoc: "Delete Location",
+                btnDiscard: "Discard",
+
                 pullup_all: "Pull-up Bar (All)", pullup_high: "High Pull-up Bar", pullup_med: "Medium Pull-up Bar", pullup_low: "Low Pull-up Bar", parallel_bars: "Parallel Bars", push_up_bar: "Push-up Bar", monkey_bar: "Monkey Bar", rings: "Gymnastic Rings", ladder: "Wall Bar / Ladder", ab_bench: "Sit-up Bench", outros: "Others (Specify)",
                 cond6: "Excellent", cond5: "Great", cond4: "Good", cond3: "Fair", cond2: "Poor", cond1: "Terrible", cond0: "Not informed"
             }
@@ -1144,8 +1210,11 @@
         let localLocations = [];
         let cloudLocations = [];
         let locations = []; 
-        
         let onlineLocations = []; 
+        
+        let hiddenLocations = new Set(JSON.parse(localStorage.getItem('calismap_hidden') || '[]'));
+        let filterHiddenOnly = false;
+        
         let filterEquips = new Set();
         let filterConditions = new Set();
         let filterPrices = new Set();
@@ -1243,9 +1312,9 @@
 
                 const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
                 const { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInWithRedirect, getRedirectResult } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
-                const { getFirestore, enableIndexedDbPersistence, collection, doc, setDoc, deleteDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+                const { getFirestore, enableIndexedDbPersistence, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
                 
-                window.f_collection = collection; window.f_doc = doc; window.f_setDoc = setDoc; window.f_deleteDoc = deleteDoc; window.f_onSnapshot = onSnapshot;
+                window.f_collection = collection; window.f_doc = doc; window.f_setDoc = setDoc; window.f_deleteDoc = deleteDoc; window.f_onSnapshot = onSnapshot; window.f_getDocs = getDocs;
                 window.f_GoogleAuthProvider = GoogleAuthProvider; window.f_signInWithPopup = signInWithPopup; window.f_signOut = signOut; window.f_signInWithRedirect = signInWithRedirect; window.f_getRedirectResult = getRedirectResult;
 
                 const firebaseConfig = JSON.parse(firebaseConfigStr);
@@ -1284,10 +1353,9 @@
                         if(userProfile) { userProfile.classList.add('hidden'); userProfile.classList.remove('flex'); }
                     }
 
-                    toggleAdminPanels(); // Checa se deve mostrar painel de Admin
+                    toggleAdminPanels(); 
                 });
 
-                // V41: Carrega a nuvem pública imediatamente, sem depender de login/anônimo!
                 listenToCloudDatabase();
 
             } catch (err) {
@@ -1321,7 +1389,7 @@
         function toggleUserMenu() { document.getElementById('user-menu').classList.toggle('hidden'); }
 
         function listenToCloudDatabase() {
-            if (!f_db) return; // Removida a trava do currentUser para permitir leitura pública
+            if (!f_db) return; 
             if (unsubscribeCloud) unsubscribeCloud();
 
             const colRef = window.f_collection(f_db, 'artifacts', f_appId, 'public', 'data', 'locations');
@@ -1423,6 +1491,145 @@
             if (baseCurr === targetCurr) { return targetCurr === 'BRL' ? `R$ ${basePrice.toFixed(2).replace('.', ',')}` : `$ ${basePrice.toFixed(2)}`; }
             if (!usdToBrlRate) { return baseCurr === 'BRL' ? `R$ ${basePrice.toFixed(2).replace('.', ',')}` : `$ ${basePrice.toFixed(2)}`; }
             if (targetCurr === 'BRL') { return `R$ ${(basePrice * usdToBrlRate).toFixed(2).replace('.', ',')}`; } else { return `$ ${(basePrice / usdToBrlRate).toFixed(2)}`; }
+        }
+
+        // --- VISIBILITY (OCULTAR) & CLONING ---
+        function toggleHiddenFilter() {
+            filterHiddenOnly = document.getElementById('filter-hidden-cb') ? document.getElementById('filter-hidden-cb').checked : false;
+            const restoreBtn = document.getElementById('btn-restore-hidden');
+            if(filterHiddenOnly) { restoreBtn.classList.remove('hidden'); } 
+            else { restoreBtn.classList.add('hidden'); }
+            renderCatalog();
+        }
+
+        function restoreAllHidden() {
+            hiddenLocations.clear();
+            localStorage.setItem('calismap_hidden', JSON.stringify([...hiddenLocations]));
+            if (document.getElementById('filter-hidden-cb')) document.getElementById('filter-hidden-cb').checked = false;
+            filterHiddenOnly = false;
+            document.getElementById('btn-restore-hidden').classList.add('hidden');
+            renderCatalog();
+        }
+
+        function toggleHide(id, e) {
+            if(e) e.stopPropagation();
+            if (hiddenLocations.has(id)) hiddenLocations.delete(id);
+            else hiddenLocations.add(id);
+            localStorage.setItem('calismap_hidden', JSON.stringify([...hiddenLocations]));
+            renderCatalog();
+            if (selectedLocationId === id && !document.getElementById('detailsModal').classList.contains('hidden')) {
+                openDetails(id); 
+            }
+        }
+
+        function toggleHideFromDetails() {
+            if(!selectedLocationId) return;
+            toggleHide(selectedLocationId);
+        }
+
+        function cloneToLocal() {
+            if(!selectedLocationId) return;
+            const loc = cloudLocations.find(l => l.id === selectedLocationId) || onlineLocations.find(l => l.id === selectedLocationId);
+            if(!loc) return;
+            
+            const localCopy = JSON.parse(JSON.stringify(loc));
+            localCopy.id = 'loc_copy_' + Date.now();
+            localCopy.isCloud = false;
+            localCopy.isOnline = false;
+            localCopy.ownerId = f_currentUser ? f_currentUser.uid : 'local';
+            localCopy.ownerName = f_currentUser ? (f_currentUser.displayName || 'Usuário') : 'Usuário';
+            localCopy.ownerIsAdmin = false;
+            localCopy.timestamp = Date.now();
+            
+            localLocations.push(localCopy);
+            saveLocalDB();
+            closeModal('detailsModal');
+            alert(t('cloneSuccess'));
+            openDetails(localCopy.id);
+        }
+
+        async function reportLocation() {
+            if(!selectedLocationId) return;
+            const reason = prompt(t('reportReason'));
+            if(!reason) return;
+            
+            const loc = locations.find(l => l.id === selectedLocationId) || onlineLocations.find(l => l.id === selectedLocationId);
+            if(!loc) return;
+
+            if (f_db) {
+                try {
+                    const reportId = 'rep_' + Date.now();
+                    const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'reports', reportId);
+                    await window.f_setDoc(docRef, {
+                        reportId: reportId,
+                        locationId: loc.id,
+                        locationName: loc.name,
+                        reason: reason,
+                        reportedBy: f_currentUser ? f_currentUser.uid : 'anonymous',
+                        timestamp: Date.now()
+                    });
+                    alert(t('reportSuccess'));
+                } catch(e) {
+                    alert("Erro ao enviar denúncia.");
+                }
+            }
+        }
+
+        async function viewReports() {
+            if(!isAdmin() || !f_db) return;
+            
+            try {
+                const colRef = window.f_collection(f_db, 'artifacts', f_appId, 'public', 'data', 'reports');
+                const snapshot = await window.f_getDocs(colRef);
+                let reportsHtml = '';
+                
+                snapshot.forEach(doc => {
+                    const rep = doc.data();
+                    const dateStr = new Date(rep.timestamp).toLocaleString('pt-BR');
+                    reportsHtml += `
+                        <div class="p-3 border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800 rounded mb-2 text-sm" id="rep-${rep.reportId}">
+                            <strong>Local:</strong> ${rep.locationName} <br>
+                            <strong>Motivo:</strong> ${rep.reason} <br>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">${dateStr}</span>
+                            <div class="mt-2 flex gap-2 flex-wrap">
+                                <button onclick="openDetails('${rep.locationId}'); closeModal('reportsModal');" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-bold transition">${t('btnViewLoc')}</button>
+                                <button onclick="deleteLocationAdmin('${rep.locationId}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold transition">${t('btnDelLoc')}</button>
+                                <button onclick="deleteReport('${rep.reportId}')" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-xs font-bold transition">${t('btnDiscard')}</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if(!reportsHtml) reportsHtml = `<p class="text-gray-500 text-sm">${t('noReports')}</p>`;
+                
+                document.getElementById('reports-container').innerHTML = reportsHtml;
+                openModal('reportsModal');
+                closeDbModal();
+            } catch(e) {
+                alert("Erro ao buscar denúncias: " + e.message);
+            }
+        }
+
+        async function deleteReport(reportId) {
+            if(!isAdmin() || !f_db) return;
+            try {
+                const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'reports', reportId);
+                await window.f_deleteDoc(docRef);
+                const el = document.getElementById('rep-'+reportId);
+                if(el) el.remove();
+            } catch(e) { alert("Erro ao deletar denúncia"); }
+        }
+
+        async function deleteLocationAdmin(locId) {
+            if(!isAdmin() || !f_db) return;
+            if(confirm(t('confirmDelete'))) {
+                try {
+                    const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', locId);
+                    await window.f_deleteDoc(docRef);
+                    alert("Local excluído com sucesso.");
+                    closeModal('reportsModal');
+                } catch(e) { alert("Erro: " + e.message); }
+            }
         }
 
         // --- DATABASE LOGIC ---
@@ -1540,6 +1747,18 @@
                 btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Publicando...`;
                 lucide.createIcons();
                 
+                // V39: Proximity validation before publishing to cloud
+                const isDuplicate = cloudLocations.some(cLoc => {
+                    return calculateDistance(loc.lat, loc.lng, cLoc.lat, cLoc.lng) <= 0.02; // 20m
+                });
+                
+                if (isDuplicate) {
+                    alert(t('errProximity'));
+                    btn.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> <span data-i18n="btnPublishCloud">${t('btnPublishCloud')}</span>`;
+                    lucide.createIcons();
+                    return;
+                }
+
                 const docRef = window.f_doc(f_db, 'artifacts', f_appId, 'public', 'data', 'locations', loc.id);
                 await window.f_setDoc(docRef, loc);
                 
@@ -1556,7 +1775,6 @@
                 lucide.createIcons();
             }
         }
-
 
         // Importações locais antigas
         function mergeData(event) {
@@ -1734,7 +1952,7 @@
         function toggleCondFilter(condId) { if (filterConditions.has(condId)) filterConditions.delete(condId); else filterConditions.add(condId); renderCatalog(); }
         function togglePriceFilter(priceId) { if (filterPrices.has(priceId)) filterPrices.delete(priceId); else filterPrices.add(priceId); renderCatalog(); }
 
-        function clearFilters() { filterEquips.clear(); filterConditions.clear(); filterPrices.clear(); document.querySelectorAll('.eq-filter-cb, .cond-filter-cb, .price-filter-cb').forEach(cb => cb.checked = false); filterFavOnly = false; if(document.getElementById('filter-fav-cb')) document.getElementById('filter-fav-cb').checked = false; searchTerm = ''; if(document.getElementById('main-search-input')) document.getElementById('main-search-input').value = ''; renderCatalog(); }
+        function clearFilters() { filterEquips.clear(); filterConditions.clear(); filterPrices.clear(); document.querySelectorAll('.eq-filter-cb, .cond-filter-cb, .price-filter-cb').forEach(cb => cb.checked = false); filterFavOnly = false; if(document.getElementById('filter-fav-cb')) document.getElementById('filter-fav-cb').checked = false; filterHiddenOnly = false; if(document.getElementById('filter-hidden-cb')) document.getElementById('filter-hidden-cb').checked = false; document.getElementById('btn-restore-hidden').classList.add('hidden'); searchTerm = ''; if(document.getElementById('main-search-input')) document.getElementById('main-search-input').value = ''; renderCatalog(); }
         function selectAllEquips() { EQUIPMENTS.forEach(eqId => filterEquips.add(eqId)); document.querySelectorAll('.eq-filter-cb').forEach(cb => cb.checked = true); renderCatalog(); }
         function showSearchScopes() { const scopes = document.getElementById('search-scopes'); if (scopes) { scopes.classList.remove('hidden'); scopes.classList.add('flex'); } }
         function hideSearchScopes() { const scopes = document.getElementById('search-scopes'); if (scopes) { scopes.classList.add('hidden'); scopes.classList.remove('flex'); } }
@@ -1762,7 +1980,6 @@
 
         function toggleFavorite() {
             if(!selectedLocationId) return;
-            // Procurar primeiro localmente, depois na nuvem
             let loc = localLocations.find(l => l.id === selectedLocationId);
             let isCloudFav = false;
             
@@ -1821,6 +2038,9 @@
                 }
 
                 combined = uniqueLocs.filter(loc => {
+                    if (filterHiddenOnly) { if (!hiddenLocations.has(loc.id)) return false; } 
+                    else { if (hiddenLocations.has(loc.id)) return false; }
+
                     if (filterFavOnly && !loc.isFavorite) return false;
                     const eqs = normalizeEqs(loc.equipments);
 
@@ -1857,7 +2077,7 @@
             }
 
             if (doOnline && searchTerm.length >= 3) {
-                if (filterEquips.size === 0 && filterConditions.size === 0 && filterPrices.size === 0 && !filterFavOnly) {
+                if (filterEquips.size === 0 && filterConditions.size === 0 && filterPrices.size === 0 && !filterFavOnly && !filterHiddenOnly) {
                     combined = [...combined, ...onlineLocations];
                 }
             }
@@ -1938,6 +2158,9 @@
                 let isFree = (parseFloat(loc.price) || 0) === 0;
                 if (loc.accessData && loc.accessData.isFree === false) isFree = false; else if (loc.accessData && loc.accessData.isFree === true) isFree = true;
                 const priceStr = formatPrice(loc); const priceClass = isFree ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400';
+                
+                const isHidden = hiddenLocations.has(loc.id);
+                const hideHtml = isHidden ? `<i data-lucide="eye-off" class="w-4 h-4 text-indigo-500 fill-indigo-500 shrink-0 cursor-pointer" onclick="toggleHide('${loc.id}', event)" title="${t('unhideLoc')}"></i>` : `<i data-lucide="eye-off" class="w-4 h-4 text-gray-300 hover:text-gray-500 transition shrink-0 cursor-pointer" onclick="toggleHide('${loc.id}', event)" title="${t('hideLoc')}"></i>`;
                 const favHtml = loc.isFavorite ? '<i data-lucide="heart" class="w-4 h-4 text-pink-500 fill-pink-500 shrink-0"></i>' : '';
                 
                 const onlineTag = loc.isOnline ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800 shrink-0"><i data-lucide="globe" class="w-3 h-3 inline"></i> Online</span>` : '';
@@ -1959,6 +2182,7 @@
                                 <div class="flex justify-between items-start">
                                     <div class="flex items-center gap-1.5 min-w-0">
                                         <h3 class="font-bold text-base truncate pr-2">${loc.name}</h3>
+                                        ${hideHtml}
                                         ${favHtml}
                                     </div>
                                     <div class="flex flex-col items-end gap-1 shrink-0">
@@ -1981,7 +2205,7 @@
 
                     html += `
                         <div onclick="openDetails('${loc.id}')" class="bg-white dark:bg-darkcard ${borderTopClass} border-x border-b border-x-gray-200 border-b-gray-200 dark:border-x-gray-800 dark:border-b-gray-800 rounded-xl p-2 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col gap-2 relative">
-                            <div class="absolute top-3 left-3 z-10">${favHtml}</div>
+                            <div class="absolute top-3 left-3 z-10 flex flex-col gap-1.5">${favHtml}${hideHtml}</div>
                             <div class="w-full h-24 bg-gray-200 dark:bg-gray-800 rounded-lg shrink-0 overflow-hidden relative">
                                 ${hasPhoto ? `<img src="${locPhotos[0]}" class="w-full h-full object-cover">${photoCountBadge}` : `<div class="w-full h-full flex items-center justify-center text-gray-400"><i data-lucide="${loc.isOnline ? 'globe' : (loc.isCloud ? 'cloud' : 'image')}" class="w-8 h-8"></i></div>`}
                                 <div class="absolute top-1 right-1 bg-white/90 dark:bg-black/80 backdrop-blur-sm rounded px-1.5 py-0.5 flex flex-col items-center">
@@ -2007,6 +2231,7 @@
                                 <div class="flex justify-between items-start">
                                     <div class="flex items-center gap-2">
                                         <h3 class="font-bold text-lg pr-2">${loc.name}</h3>
+                                        ${hideHtml}
                                         ${favHtml}
                                     </div>
                                     ${!loc.isOnline ? `<span class="text-xs font-bold ${priceClass} mt-1">${priceStr}</span>` : ''}
@@ -2077,7 +2302,6 @@
             
             document.getElementById('save-destination-panel').classList.remove('hidden');
             
-            // V39: Bloquear opção de Nuvem se não estiver logado com Google
             const cloudRadio = document.querySelector('input[name="save_dest"][value="cloud"]');
             const localRadio = document.querySelector('input[name="save_dest"][value="local"]');
             const cloudLabel = document.getElementById('label-dest-cloud');
@@ -2163,6 +2387,23 @@
                 const cloudRadio = document.querySelector('input[name="save_dest"][value="cloud"]');
                 isCloudDest = cloudRadio && cloudRadio.checked;
             }
+
+            const editId = document.getElementById('add-form').dataset.editId;
+
+            // Anti-Duplicação para NOVOS locais na Nuvem
+            if (isCloudDest && !editId) {
+                let checkLat = tempLocation ? tempLocation.lat : (userLocation ? userLocation.lat : map.getCenter().lat);
+                let checkLng = tempLocation ? tempLocation.lng : (userLocation ? userLocation.lng : map.getCenter().lng);
+                
+                const isDuplicate = cloudLocations.some(cLoc => {
+                    return calculateDistance(checkLat, checkLng, cLoc.lat, cLoc.lng) <= 0.02; // 20m
+                });
+                
+                if (isDuplicate) {
+                    alert(t('errProximity'));
+                    return; 
+                }
+            }
             
             const isDefault = document.getElementById('acc-default-cb').checked;
             let accessData = { isDefault: true, isFree: true, price: 0, currency: 'BRL', types: ['livre'], restrito: null, particular: null };
@@ -2193,7 +2434,6 @@
                 });
             }
 
-            const editId = document.getElementById('add-form').dataset.editId;
             let targetLoc = null;
             let targetList = '';
 
@@ -2206,7 +2446,6 @@
                 }
 
                 if (targetLoc) {
-                    // V40: Proteção JavaScript contra edição forçada
                     if (targetList === 'cloud' && f_currentUser && !f_currentUser.isAnonymous) {
                         if (targetLoc.ownerId !== f_currentUser.uid && !isAdmin()) {
                             alert("Segurança: Você não tem permissão para alterar locais de outros usuários.");
@@ -2217,7 +2456,7 @@
                     targetLoc.name = name; targetLoc.desc = desc; targetLoc.isFavorite = isFavorite;
                     targetLoc.accessData = accessData; targetLoc.price = accessData.price; targetLoc.currency = accessData.currency;
                     targetLoc.equipments = selectedEqs; targetLoc.photos = [...currentPhotosBase64]; targetLoc.links = [...currentLinks];
-                    targetLoc.editedAt = Date.now(); // Adiciona data de edição
+                    targetLoc.editedAt = Date.now(); 
                     if (tempLocation) { targetLoc.lat = tempLocation.lat; targetLoc.lng = tempLocation.lng; }
                     
                     if (targetList === 'local') { saveLocalDB(); closeModal('addModal'); }
@@ -2239,7 +2478,6 @@
                     equipments: selectedEqs, photos: [...currentPhotosBase64], links: [...currentLinks], isFavorite: isFavorite, timestamp: Date.now()
                 };
 
-                // V39/40: Segurança extra para impedir salvamento público se for anônimo + Grava Autor
                 if (isCloudDest && f_currentUser && !f_currentUser.isAnonymous && f_db) {
                     newLoc.ownerId = f_currentUser.uid;
                     newLoc.ownerName = f_currentUser.displayName || 'Usuário';
@@ -2277,6 +2515,9 @@
             const favIcon = document.getElementById('det-fav-icon');
             if(loc.isFavorite && !loc.isOnline) { favIcon.classList.add('fill-pink-500', 'text-pink-500'); favIcon.classList.remove('text-gray-300'); } else { favIcon.classList.remove('fill-pink-500', 'text-pink-500'); favIcon.classList.add('text-gray-300'); }
 
+            const hideIcon = document.getElementById('det-hide-icon');
+            if(hiddenLocations.has(loc.id)) { hideIcon.classList.add('text-indigo-500'); hideIcon.classList.remove('text-gray-300'); } else { hideIcon.classList.remove('text-indigo-500'); hideIcon.classList.add('text-gray-300'); }
+
             const locPhotos = loc.photos || (loc.photo ? [loc.photo] : []); currentDetailPhotos = locPhotos;
             if (locPhotos.length > 0) {
                 noImgEl.classList.add('hidden'); locPhotos.forEach((src, idx) => { photoContainer.innerHTML += `<img src="${src}" onclick="openFullScreen(${idx})" class="w-full h-full object-cover shrink-0 snap-center cursor-pointer hover:opacity-90 transition" style="min-width: 100%;">`; });
@@ -2289,6 +2530,7 @@
             const actionWeb = document.getElementById('det-web-actions');
             const btnDel = document.getElementById('det-btn-del');
             const btnEdit = document.getElementById('det-btn-edit');
+            const btnClone = document.getElementById('det-btn-clone');
             const btnPublish = document.getElementById('det-btn-publish');
             
             badgeContainer.innerHTML = ''; extraInfoContainer.innerHTML = ''; extraInfoContainer.classList.add('hidden');
@@ -2324,7 +2566,6 @@
                     eqs.forEach(eq => { const label = t(eq.id); const cData = CONDITIONS[eq.condition || 0]; const condLabel = t('cond' + (eq.condition || 0)); const extra = eq.desc ? `<span class="text-gray-500 dark:text-gray-400 italic text-[10px] block mt-0.5">- ${eq.desc}</span>` : ''; eqContainer.innerHTML += `<div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700"><div class="flex flex-col"><span class="text-sm font-semibold">${label}</span>${extra}</div><span class="text-[10px] px-1.5 py-0.5 font-bold rounded-full ${cData.badge}">${condLabel}</span></div>`; });
                 } else { eqContainer.innerHTML = `<span class="text-xs text-gray-400">${t('noEq')}</span>`; }
 
-                // V40/V41: Renderização discreta de quem adicionou, data e alterações
                 const authorInfoEl = document.getElementById('det-author-info');
                 if (authorInfoEl) {
                     const dateStr = loc.timestamp ? new Date(loc.timestamp).toLocaleDateString('pt-BR') : '--/--/----';
@@ -2337,7 +2578,6 @@
                         let isLocAdmin = loc.ownerIsAdmin;
                         let authorName = loc.ownerName || 'Usuário';
                         
-                        // Correção para forçar visual de admin nos cards antigos seus que estavam sem nome
                         if (f_currentUser && loc.ownerId === f_currentUser.uid && isAdmin()) {
                             isLocAdmin = true;
                             if (!loc.ownerName) authorName = f_currentUser.displayName || 'Administrador';
@@ -2357,7 +2597,6 @@
                     }
                 }
 
-                // V38: Botão de Publicação só aparece se for 100% offline (celular)
                 if (!loc.isCloud && !loc.isOnline) {
                     btnPublish.classList.remove('hidden');
                 }
@@ -2365,16 +2604,18 @@
                 const isOwner = loc.isCloud ? (f_currentUser && loc.ownerId === f_currentUser.uid) : true;
                 actionOwner.classList.remove('hidden');
                 
-                if (isOwner || isAdmin()) { // Administradores sempre podem editar locais da nuvem
+                if (isOwner || isAdmin()) { 
                     btnEdit.classList.remove('hidden');
                     btnDel.classList.remove('hidden');
+                    btnClone.classList.add('hidden');
                     actionOwner.classList.remove('grid-cols-1');
                     actionOwner.classList.add('grid-cols-2');
                 } else {
                     btnEdit.classList.add('hidden');
                     btnDel.classList.add('hidden');
-                    actionOwner.classList.remove('grid-cols-2');
-                    actionOwner.classList.add('grid-cols-1');
+                    btnClone.classList.remove('hidden');
+                    actionOwner.classList.remove('grid-cols-1');
+                    actionOwner.classList.add('grid-cols-2');
                 }
             }
 
