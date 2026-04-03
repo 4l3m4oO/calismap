@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4f46e5">
     <title>Calismap</title>
+    <link rel="manifest" href="manifest.json">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2714,5 +2715,14 @@
         document.addEventListener('keydown', (e) => { const fsModal = document.getElementById('fullscreenImgModal'); if (fsModal && !fsModal.classList.contains('hidden')) { if (e.key === 'Escape') closeFullScreen(); else if (e.key === 'ArrowRight') nextFullScreen(); else if (e.key === 'ArrowLeft') prevFullScreen(); } });
 
     </script>
+
+    <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+    </script>
+
 </body>
 </html>
