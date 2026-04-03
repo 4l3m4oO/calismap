@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.calismap.twa",
+    "sha256_cert_fingerprints": [
+      "12:2F:BD:4B:21:BA:A3:10:82:73:E5:B4:1C:53:8F:F9:D6:46:F0:27:A6:CE:33:91:49:EC:C7:14:6E:04:9A:E9"
+    ]
+  }
+}]
